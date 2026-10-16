@@ -27,6 +27,7 @@ node Business(SharedNode) {
         phone: str = "",
         next_customer_number: int = 1,
         next_order_number: int = 1001,
+        next_quote_number: int = 1001,
         owner_root_id: str = "";
 }
 
@@ -116,7 +117,9 @@ edge HasAudit(SharedEdge): Business --> AuditEvent {}
 node Conversation(SharedNode) {
     has customer_id: str,
         created_at: str,
-        next_seq: int = 1;
+        next_seq: int = 1,
+        flagged: bool = False,
+        flag_reason: str = "";
 }
 
 """A single chat message, inbound from the retailer or outbound from the agent."""
@@ -134,3 +137,38 @@ node Message(SharedNode) {
 
 edge HasConversation(SharedEdge): Business --> Conversation {}
 edge ContainsMessage(SharedEdge): Conversation --> Message {}
+
+"""A priced proposal the customer can confirm. Prices are a snapshot taken when it is made."""
+node Quotation(SharedNode) {
+    has quote_id: str,
+        customer_id: str,
+        created_at: str,
+        expires_at: str,
+        status: str = "OPEN",
+        total_kes: int = 0,
+        notes: list[str] = [];
+}
+
+node QuotationLine(SharedNode) {
+    has product_sku: str,
+        product_name: str,
+        quantity: int,
+        unit: str,
+        unit_price_kes: int,
+        line_total_kes: int;
+}
+
+"""One processed customer message: what the agent did, for the dashboard trace."""
+node AgentExecution(SharedNode) {
+    has message_seq: int,
+        input_type: str,
+        outcome: str,
+        duration_ms: int,
+        created_at: str,
+        steps: list[str] = [],
+        error: str = "";
+}
+
+edge HasQuotation(SharedEdge): Conversation --> Quotation {}
+edge QuoteContains(SharedEdge): Quotation --> QuotationLine {}
+edge HasExecution(SharedEdge): Conversation --> AgentExecution {}

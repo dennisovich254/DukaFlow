@@ -4,6 +4,7 @@ import from domain.models { Order, ContainsLine }
 import from domain.errors { DomainError }
 import from domain.orders { create_manual_order, list_orders, get_order, apply_order_action }
 import from domain.customers { find_customer }
+import from ai.notify { notify_order_update }
 import from api.business { current_business }
 import from api.results { to_api_error }
 import from api.contracts { OrderLineView, OrderView, OrderResult, NewOrderInput, OrderLookup, OrderActionInput }
@@ -56,6 +57,7 @@ def:protect act_on_order(data: OrderActionInput) -> OrderResult {
     try {
         biz = current_business();
         order = apply_order_action(biz, data.order_id, data.action, data.reason);
+        notify_order_update(biz, order);
         return OrderResult(ok=True, order=order_view(biz, order));
     } except DomainError as e {
         return OrderResult(ok=False, error=to_api_error(e));

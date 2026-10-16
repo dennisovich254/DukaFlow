@@ -58,7 +58,7 @@ test "order lifecycle over http with stock, summary and demo data" {
         r = call(client, "act_on_order", {"data": {"order_id": "ORD-1001", "action": "submit"}});
         assert r["order"]["status"] == "PENDING_APPROVAL";
         s = call(client, "dashboard_summary", {});
-        assert s["pending_approval"] == 1 and s["orders_today"] == 1;
+        assert s["pending_approval"] == 1 and s["orders_today"] == 1 and s["ai_mode"] == "mock";
         r = call(client, "act_on_order", {"data": {"order_id": "ORD-1001", "action": "approve"}});
         assert r["order"]["status"] == "APPROVED";
         again = call(client, "act_on_order", {"data": {"order_id": "ORD-1001", "action": "approve"}});

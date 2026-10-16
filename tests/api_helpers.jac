@@ -1,9 +1,15 @@
 """Helpers for in-process endpoint tests."""
 
+import os;
 import tempfile;
 import from jaclang.testing.testing { JacTestClient }
 
 glob PASSWORD: str = "password123";
+
+# Endpoint tests never call the real model: the agent runs in rule-based mock mode.
+with entry {
+    os.environ["AI_MODE"] = "mock";
+}
 
 """Start an isolated app instance (own database) for one test."""
 def new_client() -> any {
