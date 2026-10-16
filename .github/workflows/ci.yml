@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check-and-test:
+    runs-on: ubuntu-latest
+    env:
+      JAC_VERSION: "0.37.25"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Jac toolchain
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/jaseci-labs/jaseci/main/scripts/install.sh \
+            | bash -s -- --version "$JAC_VERSION"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Jac version
+        run: jac --version
+
+      - name: Install project dependencies
+        run: jac install
+
+      - name: Static checks
+        run: jac check .
+
+      - name: Tests
+        # A test file whose imports fail is reported as SKIPPED, not failed,
+        # so treat any skip as a failure.
+        run: |
+          set -o pipefail
+          jac test -d tests/ -v 2>&1 | tee test-output.txt
+          if grep -q "SKIPPED" test-output.txt; then
+            echo "::error::Some test files were skipped (likely import errors)"
+            exit 1
+          fi
