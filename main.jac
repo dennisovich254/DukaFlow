@@ -2,6 +2,7 @@ import from ".components.ui.button" { Button }
 import from ".components.ui.card" {
     Card, CardHeader, CardTitle, CardDescription, CardContent
 }
+import from api.products { list_catalogue, add_product, edit_product, adjust_stock }
 import ".styles.global.css";
 
 # Throwaway theme check (P0.5); replaced by the real layout in P1.
