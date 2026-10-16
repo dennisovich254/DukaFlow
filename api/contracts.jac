@@ -127,7 +127,8 @@ obj DashboardSummaryView {
     has orders_today: int,
         pending_approval: int,
         low_stock_count: int,
-        recent_orders: list[OrderView];
+        recent_orders: list[OrderView],
+        ai_mode: str = "live";
 }
 
 """One chat message as shown in either chat UI."""

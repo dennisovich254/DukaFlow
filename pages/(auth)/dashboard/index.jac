@@ -19,6 +19,7 @@ def:pub OverviewPage() -> JsxPage {
     has ordersToday: int = 0;
     has pendingApproval: int = 0;
     has lowStock: int = 0;
+    has aiMode: str = "live";
     has loading: bool = True;
 
     async def load_all {
@@ -28,6 +29,7 @@ def:pub OverviewPage() -> JsxPage {
         ordersToday = summary.orders_today;
         pendingApproval = summary.pending_approval;
         lowStock = summary.low_stock_count;
+        aiMode = summary.ai_mode;
         customers = await list_customer_records();
         loading = False;
     }
@@ -44,6 +46,9 @@ def:pub OverviewPage() -> JsxPage {
 
     <DashboardShell>
         <PageHeader title="Overview" description="What is happening in your business today.">
+            {if aiMode == "mock" {
+                <span className="rounded-full bg-amber-100 pt-1 pb-1 pl-3 pr-3 text-xs font-medium text-amber-900">Mock AI: rule-based demo mode</span>
+            }}
             {if not loading and len(products) == 0 {
                 <Button onClick={seed}>Load demo data</Button>
             }}
