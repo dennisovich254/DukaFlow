@@ -21,3 +21,14 @@
 6. **Separation:** `/chat` with no `?invite=` (and after clearing site data) shows "Ask your wholesaler for your chat link"; nothing on the chat page links to the dashboard; opening `/dashboard` on the phone asks for a wholesaler login.
 7. **Revoke links** for that customer: reopening the old link (after clearing site data) shows the "Ask your wholesaler" screen and nothing is stored.
 8. Nothing scrolls sideways at 360 px.
+
+## G4: the agent in the Shop chat (phone, live model)
+
+1. Wholesaler: **Load demo data**, then **Customers → Chat link** for Mama Wanjiku Shop; open it on the phone.
+2. Send `Niletee Rina 1L carton 10 na Jogoo 2kg bale 5`. Expect a quotation that says only 8 Rina are available and adds 2 Fresh Fri 1L for the rest, **total KSh 35,550**, and asks you to confirm. No order exists yet.
+3. Reply `sawa`. Expect "Oda ORD-… imetumwa". In the dashboard **Orders**, one `Pending approval` order from the Shop chat appears; sending `sawa` again creates no second order.
+4. Send `nipe kama kawaida`: a quotation of Mama Wanjiku's usual order (5 Rina + 10 Jogoo, KSh 28,500).
+5. Send `kuku na samaki`: the agent says it does not stock them (no quotation).
+6. Photograph a handwritten list with one unreadable line: the agent quotes or lists the lines it read and asks about the unclear line before quoting.
+7. Approve the order from the dashboard (Approve): stock reserves as in P2.
+8. With `AI_MODE=mock` (no key) the Overview shows the "Mock AI" badge and steps 2–4 still work.
