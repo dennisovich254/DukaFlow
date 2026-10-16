@@ -5,6 +5,7 @@ import from domain.models { Business, Product, InventoryRecord, InventoryMovemen
 import from domain.errors { DomainError }
 import from domain.catalogue { get_product, inventory_of, require_text }
 import from domain.clock { now_iso }
+import from domain.audit { record_audit_event }
 
 def require_nonzero_int(value: any) -> int {
     if isinstance(value, bool) or not isinstance(value, int) or (value as int) == 0 {
@@ -47,9 +48,14 @@ def apply_stock_change(
 }
 
 """Manual stock correction by the wholesaler (deliveries, damage, counts)."""
-def adjust_inventory(biz: Business, sku: str, quantity_change: any, reason: str) -> InventoryRecord {
+def adjust_inventory(
+    biz: Business, sku: str, quantity_change: any, reason: str, actor: str = "wholesaler"
+) -> InventoryRecord {
     change = require_nonzero_int(quantity_change);
     clean_reason = require_text(reason, "Reason");
     product = get_product(biz, sku);
-    return apply_stock_change(product, change, 0, "ADJUSTMENT", clean_reason);
+    before = inventory_of(product).quantity_on_hand;
+    rec = apply_stock_change(product, change, 0, "ADJUSTMENT", clean_reason);
+    record_audit_event(biz, actor, "STOCK_ADJUSTED", product.sku, str(before), str(rec.quantity_on_hand), clean_reason);
+    return rec;
 }

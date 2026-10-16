@@ -116,3 +116,16 @@ obj NewOrderInput {
 obj OrderLookup {
     has order_id: str;
 }
+
+obj OrderActionInput {
+    has order_id: str,
+        action: str,
+        reason: str = "";
+}
+
+obj DashboardSummaryView {
+    has orders_today: int,
+        pending_approval: int,
+        low_stock_count: int,
+        recent_orders: list[OrderView];
+}

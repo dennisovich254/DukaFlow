@@ -2,11 +2,11 @@
 
 import from domain.models { Order, ContainsLine }
 import from domain.errors { DomainError }
-import from domain.orders { create_manual_order, list_orders, get_order }
+import from domain.orders { create_manual_order, list_orders, get_order, apply_order_action }
 import from domain.customers { find_customer }
 import from api.business { current_business }
 import from api.results { to_api_error }
-import from api.contracts { OrderLineView, OrderView, OrderResult, NewOrderInput, OrderLookup }
+import from api.contracts { OrderLineView, OrderView, OrderResult, NewOrderInput, OrderLookup, OrderActionInput }
 
 def order_view(biz: any, o: Order) -> OrderView {
     customer = find_customer(biz, o.customer_id);
@@ -46,6 +46,16 @@ def:protect create_order(data: NewOrderInput) -> OrderResult {
     try {
         biz = current_business();
         order = create_manual_order(biz, data.customer_id, data.items);
+        return OrderResult(ok=True, order=order_view(biz, order));
+    } except DomainError as e {
+        return OrderResult(ok=False, error=to_api_error(e));
+    }
+}
+
+def:protect act_on_order(data: OrderActionInput) -> OrderResult {
+    try {
+        biz = current_business();
+        order = apply_order_action(biz, data.order_id, data.action, data.reason);
         return OrderResult(ok=True, order=order_view(biz, order));
     } except DomainError as e {
         return OrderResult(ok=False, error=to_api_error(e));

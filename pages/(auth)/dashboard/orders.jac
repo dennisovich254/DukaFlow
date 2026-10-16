@@ -1,9 +1,9 @@
 import from "sonner" { toast }
 import from ....api.products { list_catalogue }
 import from ....api.customers { list_customer_records }
-import from ....api.orders { list_order_records, create_order }
+import from ....api.orders { list_order_records, create_order, act_on_order }
 import from ....api.contracts {
-    ProductView, CustomerView, OrderView, OrderResult, CatalogueQuery, NewOrderInput
+    ProductView, CustomerView, OrderView, OrderResult, CatalogueQuery, NewOrderInput, OrderActionInput
 }
 import from ....domain.order_input { OrderItemInput }
 import from ....lib.money { format_kes }
@@ -18,6 +18,16 @@ import from ....components.ui.table { Table, TableHeader, TableBody, TableRow, T
 import from ....components.ui.dialog {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 }
+
+"""Buttons offered for each order status: [action, label]."""
+glob ORDER_ACTIONS: dict[str, list[list[str]]] = {
+    "DRAFT": [["submit", "Submit"], ["cancel", "Cancel"]],
+    "QUOTED": [["cancel", "Cancel"]],
+    "PENDING_APPROVAL": [["approve", "Approve"], ["reject", "Reject"]],
+    "APPROVED": [["dispatch", "Dispatch"], ["cancel", "Cancel"]],
+    "PACKED": [["dispatch", "Dispatch"], ["cancel", "Cancel"]],
+    "DISPATCHED": [["deliver", "Mark delivered"]]
+};
 
 """A draft order line in the form (strings until submitted)."""
 obj DraftLine {
@@ -45,6 +55,21 @@ def:pub OrdersPage() -> JsxPage {
         products = await list_catalogue(CatalogueQuery(include_inactive=False));
         customers = await list_customer_records();
         await refresh();
+    }
+
+    async def run_action(order_id: str, action: str) {
+        result: OrderResult | None = None;
+        result = await act_on_order(OrderActionInput(
+            order_id=order_id, action=action,
+            reason="Rejected by wholesaler" if action == "reject" else ""
+        ));
+        if result.ok and result.order is not None {
+            toast.success(f"{result.order.order_id}: {action} done");
+        } elif result.error is not None {
+            toast.error(result.error.message);
+        }
+        await refresh();
+        products = await list_catalogue(CatalogueQuery(include_inactive=False));
     }
 
     def first_sku() -> str {
@@ -120,6 +145,7 @@ def:pub OrdersPage() -> JsxPage {
                                 <TableHead className="text-right">Amount</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Channel</TableHead>
+                                <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -133,6 +159,15 @@ def:pub OrdersPage() -> JsxPage {
                                     <TableCell className="text-right tabular-nums">{format_kes(o.total_kes)}</TableCell>
                                     <TableCell><StatusBadge status={o.status} /></TableCell>
                                     <TableCell className="capitalize">{o.channel}</TableCell>
+                                    <TableCell>
+                                        <div className="flex gap-2">
+                                            {for a in ORDER_ACTIONS.get(o.status, []) {
+                                                <Button key={a[0]} size="sm"
+                                                    variant={"default" if a[0] in ["approve", "submit", "dispatch"] else "outline"}
+                                                    onClick={lambda { run_action(o.order_id, a[0]); }}>{a[1]}</Button>
+                                            }}
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             }}
                         </TableBody>

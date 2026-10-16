@@ -98,3 +98,16 @@ edge HasOrder(SharedEdge): Business --> Order {}
 edge PlacedOrder(SharedEdge): Customer --> Order {}
 edge ContainsLine(SharedEdge): Order --> OrderLine {}
 edge ReferencesProduct(SharedEdge): OrderLine --> Product {}
+
+"""An immutable record of who did what, with before/after values."""
+node AuditEvent(SharedNode) {
+    has actor: str,
+        operation: str,
+        entity: str,
+        before: str,
+        after: str,
+        created_at: str,
+        detail: str = "";
+}
+
+edge HasAudit(SharedEdge): Business --> AuditEvent {}
