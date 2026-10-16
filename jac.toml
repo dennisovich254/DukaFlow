@@ -34,6 +34,9 @@ default_model = "${LLM_MODEL:-gemini/gemini-3.5-flash-lite}"
 # Endpoint modules must stay server-side or the client build pulls server code (E5082)
 [placement.pins]
 "api.products" = "server"
+"api.customers" = "server"
+"api.orders" = "server"
+"domain.order_input" = "server"
 "api.business" = "server"
 "api.results" = "server"
 "api.contracts" = "server"

@@ -4,6 +4,8 @@ Kept free of server imports so client pages can import these types without
 pulling server modules into the browser bundle. Money is integer whole KSh.
 """
 
+import from domain.order_input { OrderItemInput }
+
 obj ApiError {
     has code: str,
         message: str;
@@ -61,4 +63,56 @@ obj AdjustStockInput {
 
 obj CatalogueQuery {
     has include_inactive: bool = False;
+}
+
+obj CustomerView {
+    has customer_id: str,
+        name: str,
+        phone: str;
+}
+
+obj CustomerResult {
+    has ok: bool,
+        customer: CustomerView | None = None,
+        error: ApiError | None = None;
+}
+
+obj NewCustomerInput {
+    has name: str,
+        phone: str;
+}
+
+obj OrderLineView {
+    has product_sku: str,
+        product_name: str,
+        quantity: int,
+        unit: str,
+        unit_price_kes: int,
+        line_total_kes: int;
+}
+
+obj OrderView {
+    has order_id: str,
+        customer_id: str,
+        customer_name: str,
+        status: str,
+        channel: str,
+        created_at: str,
+        total_kes: int,
+        lines: list[OrderLineView];
+}
+
+obj OrderResult {
+    has ok: bool,
+        order: OrderView | None = None,
+        error: ApiError | None = None;
+}
+
+obj NewOrderInput {
+    has customer_id: str,
+        items: list[OrderItemInput];
+}
+
+obj OrderLookup {
+    has order_id: str;
 }
