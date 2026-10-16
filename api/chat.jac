@@ -22,6 +22,9 @@ import from ai.replies { holding, lang_of }
 import from config.settings { settings_from_env }
 import from api.business { current_business, find_business }
 import from api.results { to_api_error }
+import from api.ratelimit {
+    allow, prune, MESSAGES_PER_MINUTE, PHOTOS_PER_MINUTE, POLLS_PER_MINUTE, IMAGE_READS_PER_MINUTE, INVALID_PER_MINUTE
+}
 import from api.contracts {
     MessageView, ChatResult, ChatInput, ConversationQuery, ImageQuery, ImageResult,
     ChatSessionQuery, ChatSessionResult, StaffConversationQuery, StaffImageQuery,
@@ -41,6 +44,10 @@ def clean(value: str) -> str {
     return "" if value == "None" else value;
 }
 
+def rate_limited() -> DomainError {
+    return DomainError(code="RATE_LIMITED", message="Too many requests. Please wait a moment and try again.");
+}
+
 def invalid_invite() -> DomainError {
     return DomainError(code="INVALID_INVITE", message="This chat link is not valid. Ask your wholesaler for a new one.");
 }
@@ -50,7 +57,10 @@ def resolve_invite(invite: str) -> ChatContext {
     token = clean(invite);
     if not token { raise invalid_invite(); }
     got = token_peek(INVITE_PURPOSE, token);
-    if got is None { raise invalid_invite(); }
+    if got is None {
+        if not allow("invalid", INVALID_PER_MINUTE) { raise rate_limited(); }
+        raise invalid_invite();
+    }
     payload = got["payload"];
     biz = find_business(payload["owner"]);
     if biz is None { raise invalid_invite(); }
@@ -113,8 +123,12 @@ def:pub get_chat_session(query: ChatSessionQuery) -> ChatSessionResult {
 }
 
 def:pub send_chat_message(data: ChatInput) -> ChatResult {
+    prune();
     try {
         ctx = resolve_invite(data.invite);
+        key = clean(data.invite);
+        if not allow("msg:" + key, MESSAGES_PER_MINUTE) { raise rate_limited(); }
+        if clean(data.photo_base64) and not allow("photo:" + key, PHOTOS_PER_MINUTE) { raise rate_limited(); }
         settings = settings_from_env([]);
         conv = get_or_create_conversation(ctx.biz, ctx.customer_id);
         if find_message(conv, data.client_message_id) is not None {
@@ -148,6 +162,7 @@ def:pub send_chat_message(data: ChatInput) -> ChatResult {
 def:pub get_conversation(query: ConversationQuery) -> ChatResult {
     try {
         ctx = resolve_invite(query.invite);
+        if not allow("poll:" + clean(query.invite), POLLS_PER_MINUTE) { raise rate_limited(); }
         conv = get_or_create_conversation(ctx.biz, ctx.customer_id);
         return ChatResult(ok=True, messages=[message_view(m) for m in list_messages(conv, query.after_seq)]);
     } except DomainError as e {
@@ -159,6 +174,7 @@ def:pub get_conversation(query: ConversationQuery) -> ChatResult {
 def:pub get_chat_image(query: ImageQuery) -> ImageResult {
     try {
         ctx = resolve_invite(query.invite);
+        if not allow("img:" + clean(query.invite), IMAGE_READS_PER_MINUTE) { raise rate_limited(); }
         return read_image(ctx.biz, ctx.customer_id, query.media_ref);
     } except DomainError as e {
         return ImageResult(ok=False, error=to_api_error(e));
