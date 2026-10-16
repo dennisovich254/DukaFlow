@@ -173,3 +173,32 @@ test "order status questions are answered from the orders, in the customer's lan
     assert on_way.outcome == "STATUS" and order.order_id in on_way.reply and "on its way" in on_way.reply;
     assert len(brain_mod.llm.sent("messages")) == 0;
 }
+
+test "a second order is a new quotation, not a repeat of the first, even if the model copies old lines" {
+    biz = seeded();
+    agent_mod.MODE_OVERRIDE = "mock";
+    say(biz, "C-001", "Nipe cartons 5 za Rina 1L", "x1");
+    assert say(biz, "C-001", "sawa", "x2").outcome == "ORDER_PLACED";
+    live_mode([decision("QUOTE", [{"sku": "RINA-1L-CTN", "quantity": 5}, {"sku": "OMO-1KG-CTN", "quantity": 3}])]);
+    second = say(biz, "C-001", "Nipe cartons 3 za Omo 1kg", "x3");
+    assert second.outcome == "QUOTED" and "Omo" in second.reply and "Rina" not in second.reply and "KSh 6,450" in second.reply;
+    live_mode([decision("QUOTE", [{"sku": "OMO-1KG-CTN", "quantity": 3}])]);
+    assert say(biz, "C-001", "sawa", "x4").outcome == "ORDER_PLACED";
+    orders = chat_orders(biz);
+    assert len(orders) == 2 and sorted([o.total_kes for o in orders]) == [6450, 14000];
+}
+
+test "the model's history excludes finished orders, and 'the usual' still works" {
+    biz = seeded();
+    agent_mod.MODE_OVERRIDE = "mock";
+    say(biz, "C-001", "Nipe cartons 5 za Rina 1L", "y1");
+    say(biz, "C-001", "sawa", "y2");
+    live_mode([decision("QUOTE", [{"sku": "JOGOO-2KG-BALE", "quantity": 10}])]);
+    out = say(biz, "C-001", "nipe unga jogoo 2kg bale 10", "y3");
+    assert out.outcome == "QUOTED" and "Jogoo" in out.reply and "Rina" not in out.reply;
+    seen = str(brain_mod.llm.sent("messages"));
+    assert "Hii hapa bei yako" not in seen;
+    live_mode([MockToolCall(tool="recent_orders", args={}), decision("QUOTE", [{"sku": "RINA-1L-CTN", "quantity": 5}, {"sku": "JOGOO-2KG-BALE", "quantity": 10}])]);
+    usual = say(biz, "C-001", "same again please", "y4");
+    assert usual.outcome == "QUOTED" and "Rina" in usual.reply;
+}
