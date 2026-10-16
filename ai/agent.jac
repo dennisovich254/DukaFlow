@@ -28,7 +28,7 @@ import from integrations.media { media_path }
 import from config.settings { settings_from_env }
 import from ai.resolver { search_products }
 import from ai.brain {
-    Brain, RUNS, RunState, AgentDecision, DecisionLine, ParsedList, ParsedLine, rule_decide
+    Brain, RUNS, RunState, AgentDecision, DecisionLine, ParsedList, ParsedLine, rule_decide, split_chunks
 }
 import from ai.replies {
     detect_lang, lang_of, welcome, holding, too_long, too_many_lines, not_an_order, nothing_to_confirm, quote_expired,
@@ -72,9 +72,9 @@ def intent_of(text: str) -> str {
     return "OTHER";
 }
 
-def history_text(msgs: list[Message], before_seq: int) -> str {
+def history_text(msgs: list[Message], before_seq: int, after_seq: int = 0) -> str {
     rows: list[str] = [];
-    for m in [x for x in msgs if x.seq < before_seq][-8:] {
+    for m in [x for x in msgs if x.seq < before_seq and x.seq > after_seq][-8:] {
         who = "Customer" if m.sender_type == "customer" else "Assistant";
         body = "[photo]" if m.message_type == "image" and not m.content else m.content;
         rows.append(f"{who}: {body}");
@@ -115,11 +115,26 @@ def line_text(l: ParsedLine) -> str {
     return f"{l.text}{qty}";
 }
 
+glob USUAL_PATTERN: str = r"kawaida|the usual|same as (last|before)|same again|kama jana|kama mara ya mwisho";
+
+"""SKUs the customer's latest message actually refers to (resolver candidates per chunk)."""
+def grounded_skus(biz: Business, transcript: str) -> list[str] {
+    out: list[str] = [];
+    for ch in split_chunks(transcript) {
+        for c in search_products(biz, ch, "", 6) { out.append(c.sku); }
+    }
+    return out;
+}
+
 """Validate the lines a decision proposes: real, active SKUs and whole positive quantities."""
-def valid_lines(biz: Business, lines: list[DecisionLine]) -> bool {
+def valid_lines(biz: Business, lines: list[DecisionLine], transcript: str) -> bool {
+    usual = re.search(USUAL_PATTERN, transcript.lower()) is not None;
+    known = grounded_skus(biz, transcript);
     for l in lines {
         p = find_product(biz, l.sku);
         if p is None or not p.active or not isinstance(l.quantity, int) or l.quantity < 1 { return False; }
+        # Items must come from the latest message (or 'the usual'), never from earlier orders in the history.
+        if not usual and l.sku not in known { return False; }
     }
     return True;
 }
@@ -240,10 +255,12 @@ def handle(
         return AgentOutcome(reply=clarify_photo(lang, [], [l.text for l in uncertain]), outcome="CLARIFIED");
     }
 
-    history = history_text(msgs, msg.seq);
+    placed = [o.source_seq for o in list_orders(biz) if o.customer_id == cid and o.channel == "shop_chat" and o.source_seq > 0];
+    after = (max(placed) + 1) if (placed and open_q is None and draft_q is None) else 0;
+    history = history_text(msgs, msg.seq, after);
     summary = quote_summary(q);
     decision = decide(state, run_id, transcript, history, summary, live, lang);
-    if decision.action == "QUOTE" and not valid_lines(biz, decision.lines) {
+    if decision.action == "QUOTE" and not valid_lines(biz, decision.lines, transcript) {
         state.trace.append("model proposed an invalid line; used rules");
         decision = rule_decide(state, transcript, lang);
     }
@@ -254,6 +271,11 @@ def handle(
     }
     if decision.action != "QUOTE" {
         reply = decision.reply.strip();
+        earlier = [m.content for m in msgs if m.sender_type == "agent"];
+        if reply and reply in earlier {
+            state.trace.append("discarded a reply that repeats an earlier message");
+            reply = "";
+        }
         if not reply or not reply_is_safe(reply, state.prices) {
             if reply { state.trace.append("discarded a reply with an unverified price"); }
             reply = welcome(lang);
