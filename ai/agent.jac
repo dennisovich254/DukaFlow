@@ -31,8 +31,8 @@ import from ai.brain {
     Brain, RUNS, RunState, AgentDecision, DecisionLine, ParsedList, ParsedLine, rule_decide
 }
 import from ai.replies {
-    lang_of, welcome, holding, too_long, too_many_lines, not_an_order, nothing_to_confirm, quote_expired,
-    cancelled, order_placed, quote_reply, clarify_photo, reply_is_safe, kes, status_reply, is_status_question
+    detect_lang, lang_of, welcome, holding, too_long, too_many_lines, not_an_order, nothing_to_confirm, quote_expired,
+    cancelled, order_placed, quote_reply, note_text, clarify_photo, reply_is_safe, kes, status_reply, is_status_question
 }
 
 glob MAX_TEXT: int = 1000;
@@ -125,16 +125,16 @@ def valid_lines(biz: Business, lines: list[DecisionLine]) -> bool {
 }
 
 def decide(
-    state: RunState, run_id: str, text: str, history: str, open_summary: str, live: bool
+    state: RunState, run_id: str, text: str, history: str, open_summary: str, live: bool, lang: str
 ) -> AgentDecision {
     if live {
         try {
-            return Brain(run_id=run_id).decide(text, history, open_summary);
+            return Brain(run_id=run_id).decide(text, history, open_summary, lang);
         } except Exception as e {
             state.trace.append(f"model unavailable ({type(e).__name__}); used rules");
         }
     }
-    return rule_decide(state, text);
+    return rule_decide(state, text, lang);
 }
 
 def respond(biz: Business, customer_id: str, message_seq: int) -> AgentOutcome {
@@ -173,8 +173,9 @@ def handle(
 ) -> AgentOutcome {
     biz = state.biz;
     cid = state.customer_id;
-    recent_customer = " ".join([m.content for m in msgs if m.sender_type == "customer"][-3:]);
-    lang = lang_of(msg.content or recent_customer);
+    customer_texts = [m.content for m in msgs if m.sender_type == "customer" and m.content];
+    customer_texts.reverse();
+    lang = detect_lang(customer_texts);
     is_image = msg.message_type == "image";
     text = msg.content;
     if len(text) > MAX_TEXT {
@@ -240,10 +241,10 @@ def handle(
 
     history = history_text(msgs, msg.seq);
     summary = quote_summary(q);
-    decision = decide(state, run_id, transcript, history, summary, live);
+    decision = decide(state, run_id, transcript, history, summary, live, lang);
     if decision.action == "QUOTE" and not valid_lines(biz, decision.lines) {
         state.trace.append("model proposed an invalid line; used rules");
-        decision = rule_decide(state, transcript);
+        decision = rule_decide(state, transcript, lang);
     }
 
     if decision.action == "ESCALATE" {
@@ -269,7 +270,7 @@ def handle(
     }
     plan = plan_quote(biz, requested);
     if not plan.lines {
-        notes = "\n".join([n.name + (" is out of stock right now." if lang == "en" else " haipatikani kwa sasa.") for n in plan.notes]);
+        notes = "\n".join([note_text(lang, n) for n in plan.notes]);
         return AgentOutcome(reply=notes or welcome(lang), outcome="UNAVAILABLE");
     }
     if uncertain {

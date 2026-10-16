@@ -14,8 +14,8 @@ import from domain.models { Business }
 import from domain.catalogue { find_product, inventory_of }
 import from domain.orders { list_orders, order_lines }
 import from domain.quotations { alternative_for }
-import from ai.resolver { search_products, Candidate, is_clear_winner, tokenize, UNIT_WORDS }
-import from ai.replies { clarify_unknown, clarify_which, clarify_quantity, welcome, kes, lang_of }
+import from ai.resolver { search_products, Candidate, is_clear_winner, tokenize, UNIT_WORDS, STOPWORDS }
+import from ai.replies { clarify_unknown, clarify_which, clarify_quantity, welcome, kes }
 
 def make_default_model() -> any {
     return Model(model_name=os.environ.get("LLM_MODEL", "gemini/gemini-3.5-flash-lite"));
@@ -26,7 +26,8 @@ glob llm: any = make_default_model();
 
 glob GREETINGS: list[str] = [
     "habari", "mambo", "hello", "hi", "hey", "sasa", "niaje", "vipi", "jambo", "salaam", "good",
-    "morning", "evening", "karibu", "asante", "thanks", "poa", "shikamoo", "yako", "yenu", "gani"
+    "morning", "evening", "karibu", "asante", "thanks", "poa", "shikamoo", "yako", "yenu", "gani",
+    "msee", "mse", "buda", "bro", "boss", "manze", "manzee", "tafadhali", "please", "pls", "naomba", "sir", "madam"
 ];
 
 # ---------- data the model fills or the tools return ----------
@@ -163,7 +164,7 @@ obj Brain {
         return tool_recent(RUNS[self.run_id]);
     }
 
-    def decide(message: str, history: str, open_quote: str) -> AgentDecision by llm(
+    def decide(message: str, history: str, open_quote: str, language: str) -> AgentDecision by llm(
         tools=[self.search_catalogue, self.check_stock, self.suggest_alternatives, self.recent_orders],
         max_react_iterations=4,
         temperature=0.1
@@ -182,10 +183,11 @@ sem Brain.suggest_alternatives = "List in-stock substitutes from the same catego
 sem Brain.suggest_alternatives.sku = "The SKU that is short.";
 sem Brain.suggest_alternatives.quantity = "The quantity still needed.";
 sem Brain.recent_orders = "The customer's last orders with their CURRENT STATUS and totals. Use it for 'the usual' / 'same as last time' and for any question about an order's status.";
-sem Brain.decide = "You are the order desk assistant of a Kenyan wholesaler, chatting with a retailer who may write English, Swahili or Sheng. Decide what to do with the customer's latest message. Use the tools to find products and check stock; never invent SKUs, prices or stock. RULES: (1) You cannot place orders and must never say an order was placed, added or confirmed. To start an order, return action QUOTE with the products and quantities the customer asked for: the system will then build a priced quotation and ask the customer to confirm. (2) Stock shortages and substitutions are handled by the system when it builds the quotation, so do NOT ask about them: if the products and quantities are clear, return QUOTE with the full requested quantities even when stock is short. (3) For 'the usual' or 'same as last time', call recent_orders and return QUOTE with those lines. For questions about an existing order (status, delivery, what was ordered) call recent_orders and ANSWER from its result; the conversation history shows what was said before, use it to resolve words like 'it' or 'that order'. (4) If an item or quantity is genuinely unclear, or the customer asks which of several products they want, return CLARIFY with one short question; lines marked UNCERTAIN come from a photo and must be asked about, not guessed. (5) Use ANSWER only for greetings, catalogue or price questions, and things you do not stock. (6) Write in the customer's language, spell product names exactly as the tools return them, and mention a price only if a tool returned it.";
+sem Brain.decide = "You are the order desk assistant of a Kenyan wholesaler, chatting with a retailer who may write English, Swahili or Sheng. Decide what to do with the customer's latest message. Use the tools to find products and check stock; never invent SKUs, prices or stock. RULES: (1) You cannot place orders and must never say an order was placed, added or confirmed. To start an order, return action QUOTE with the products and quantities the customer asked for: the system will then build a priced quotation and ask the customer to confirm. (2) Stock shortages and substitutions are handled by the system when it builds the quotation, so do NOT ask about them: if the products and quantities are clear, return QUOTE with the full requested quantities even when stock is short. (3) For 'the usual' or 'same as last time', call recent_orders and return QUOTE with those lines. For questions about an existing order (status, delivery, what was ordered) call recent_orders and ANSWER from its result; the conversation history shows what was said before, use it to resolve words like 'it' or 'that order'. (4) If an item or quantity is genuinely unclear, or the customer asks which of several products they want, return CLARIFY with one short question; lines marked UNCERTAIN come from a photo and must be asked about, not guessed. (5) Use ANSWER only for greetings, catalogue or price questions, and things you do not stock. (6) Reply in the customer's language, given in `language`: en = plain English, sw = Swahili, sh = Sheng (casual Nairobi Swahili-English street mix). Match the customer's register; never switch language on your own. Spell product names exactly as the tools return them and mention a price only if a tool returned it.";
 sem Brain.decide.message = "The customer's latest message (or a transcript of their photographed list).";
 sem Brain.decide.history = "The last few messages of this conversation, oldest first.";
 sem Brain.decide.open_quote = "A summary of the open draft or quotation, or 'none'.";
+sem Brain.decide.language = "The customer's language: en, sw or sh. Write any reply in it.";
 sem Brain.read_list = "Read a photo of a handwritten order list and return each line. Mark unclear lines as uncertain; if the photo is not an order list, set is_order to false.";
 sem Brain.read_list.photo = "The photo.";
 sem Brain.read_list.caption = "Text the customer sent with the photo, possibly empty.";
@@ -211,7 +213,7 @@ def unit_of(chunk: str) -> str {
 
 def is_greeting_chunk(chunk: str) -> bool {
     words = re.findall(r"[a-z]+", chunk);
-    return len(words) > 0 and all([w in GREETINGS for w in words]);
+    return len(words) > 0 and all([(w in GREETINGS or w in STOPWORDS) for w in words]);
 }
 
 def clean_name(chunk: str) -> str {
@@ -219,14 +221,13 @@ def clean_name(chunk: str) -> str {
 }
 
 """Decide by rules: resolve each chunk of the message against the catalogue."""
-def rule_decide(state: RunState, text: str) -> AgentDecision {
+def rule_decide(state: RunState, text: str, lang: str = "en") -> AgentDecision {
     from_text = text.lower();
-    lang = lang_of(text);
     if re.search(r"kawaida|the usual|same as (last|before)|kama jana", from_text) {
         past = tool_recent(state);
         if not past or not past[0].lines {
             return AgentDecision(action="CLARIFY", reply=(
-                "Sioni oda yako ya awali. Niambie unachohitaji." if lang == "sw" else "I don't see a previous order. Tell me what you need."
+                "Sioni oda yako ya awali. Niambie unachohitaji." if lang in ["sw", "sh"] else "I don't see a previous order. Tell me what you need."
             ));
         }
         return AgentDecision(action="QUOTE", lines=[DecisionLine(sku=l.sku, quantity=l.quantity) for l in past[0].lines]);
