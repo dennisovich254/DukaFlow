@@ -48,3 +48,37 @@ test "order endpoints require login and are isolated per wholesaler" {
         } finally { other.close(); }
     } finally { client.close(); }
 }
+
+test "order lifecycle over http with stock, summary and demo data" {
+    client = new_client_as_owner();
+    try {
+        seed(client);
+        call(client, "adjust_stock", {"data": {"sku": "RINA-1L-CTN", "quantity_change": 10, "reason": "opening"}});
+        call(client, "create_order", {"data": {"customer_id": "C-001", "items": [{"sku": "RINA-1L-CTN", "quantity": 5}]}});
+        r = call(client, "act_on_order", {"data": {"order_id": "ORD-1001", "action": "submit"}});
+        assert r["order"]["status"] == "PENDING_APPROVAL";
+        s = call(client, "dashboard_summary", {});
+        assert s["pending_approval"] == 1 and s["orders_today"] == 1;
+        r = call(client, "act_on_order", {"data": {"order_id": "ORD-1001", "action": "approve"}});
+        assert r["order"]["status"] == "APPROVED";
+        again = call(client, "act_on_order", {"data": {"order_id": "ORD-1001", "action": "approve"}});
+        assert not again["ok"] and again["error"]["code"] == "INVALID_ORDER_STATE";
+        r = call(client, "act_on_order", {"data": {"order_id": "ORD-1001", "action": "dispatch"}});
+        assert r["order"]["status"] == "DISPATCHED";
+        products = call(client, "list_catalogue", {"query": {"include_inactive": False}});
+        assert products[0]["quantity_on_hand"] == 5 and products[0]["quantity_reserved"] == 0;
+        assert call(client, "load_demo_data", {}) == 0;     # catalogue not empty: nothing added
+    } finally { client.close(); }
+}
+
+test "dashboard and demo data endpoints require login; demo data fills an empty business" {
+    client = new_client();
+    try {
+        assert client.post("/function/dashboard_summary", json={}).status_code == 401;
+        assert client.post("/function/load_demo_data", json={}).status_code == 401;
+        client.register_user("owner", "password123");
+        assert call(client, "load_demo_data", {}) == 39;
+        assert len(call(client, "list_catalogue", {"query": {"include_inactive": False}})) == 39;
+        assert call(client, "dashboard_summary", {})["low_stock_count"] >= 2;
+    } finally { client.close(); }
+}
