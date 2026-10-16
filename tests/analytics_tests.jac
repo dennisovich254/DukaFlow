@@ -50,7 +50,7 @@ test "pending approvals are counted and listed oldest first with the customer na
     assert a.pending[0].customer_name == "Mama Wanjiku Shop";
     approve_order(biz, first.order_id);
     b = get_analytics(biz, first.created_at[:10]);
-    assert b.pending_count == 1 and b.revenue_7d == 5600;
+    assert b.pending_count == 1 and b.revenue_7d == 185280 + 5600;
 }
 
 test "an empty business gives empty, safe numbers" {

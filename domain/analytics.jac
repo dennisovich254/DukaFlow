@@ -6,7 +6,7 @@ top products, channel split, low stock and orders waiting for approval.
 import from datetime { datetime, timedelta }
 import from domain.models { Business, Order }
 import from domain.catalogue { list_products, inventory_of }
-import from domain.orders { list_orders, order_lines }
+import from domain.orders { list_orders, order_lines, order_number }
 import from domain.customers { find_customer }
 
 glob SALES_STATUSES: list[str] = ["APPROVED", "PACKED", "DISPATCHED", "DELIVERED"];
@@ -133,7 +133,7 @@ def get_analytics(biz: Business, today: str) -> Analytics {
         key=lambda (i: LowStockItem) { (i.available, i.name); }
     )[:6];
 
-    waiting = sorted([o for o in orders if o.status == "PENDING_APPROVAL"], key=lambda (o: Order) { o.created_at; });
+    waiting = sorted([o for o in orders if o.status == "PENDING_APPROVAL"], key=lambda (o: Order) { (o.created_at, order_number(o)); });
     pending: list[PendingItem] = [];
     for o in waiting[:3] {
         c = find_customer(biz, o.customer_id);
