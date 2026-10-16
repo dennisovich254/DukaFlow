@@ -1,9 +1,10 @@
 import from "@jac/runtime" { Navigate, jacIsLoggedIn }
+import from ..components.landing.Landing { Landing }
 
-"""Root: signed-in users go to the dashboard, everyone else to the login (landing page comes in P7)."""
+"""Root: signed-in wholesalers go to the dashboard, everyone else sees the landing page."""
 def:pub Home() -> JsxPage {
     if jacIsLoggedIn() {
         return <Navigate to="/dashboard" replace={True} />;
     }
-    return <Navigate to="/login" replace={True} />;
+    return <Landing />;
 }
