@@ -23,6 +23,7 @@ import from domain.quotations {
     confirm_quotation, cancel_open_quotation, is_expired
 }
 import from domain.clock { now_iso }
+import from domain.orders { list_orders }
 import from integrations.media { media_path }
 import from config.settings { settings_from_env }
 import from ai.resolver { search_products }
@@ -31,7 +32,7 @@ import from ai.brain {
 }
 import from ai.replies {
     lang_of, welcome, holding, too_long, too_many_lines, not_an_order, nothing_to_confirm, quote_expired,
-    cancelled, order_placed, quote_reply, clarify_photo, reply_is_safe, kes
+    cancelled, order_placed, quote_reply, clarify_photo, reply_is_safe, kes, status_reply, is_status_question
 }
 
 glob MAX_TEXT: int = 1000;
@@ -178,6 +179,14 @@ def handle(
     text = msg.content;
     if len(text) > MAX_TEXT {
         return AgentOutcome(reply=too_long(lang), outcome="REJECTED");
+    }
+    if not is_image and is_status_question(text) {
+        mine = [o for o in list_orders(biz) if o.customer_id == cid][:3];
+        state.trace.append(f"order_status -> {[(o.order_id, o.status) for o in mine]}");
+        return AgentOutcome(
+            reply=status_reply(lang, [(o.order_id, o.status, o.total_kes) for o in mine]),
+            outcome="STATUS"
+        );
     }
     q = latest_quotation(biz, cid);
     open_q = q if (q is not None and q.status == "OPEN") else None;

@@ -83,6 +83,8 @@ obj PastLine {
 obj PastOrder {
     has order_id: str,
         created_at: str,
+        status: str,
+        total_kes: int,
         lines: list[PastLine];
 }
 
@@ -132,7 +134,7 @@ def tool_alternatives(state: RunState, sku: str, quantity: int) -> list[Candidat
 def tool_recent(state: RunState) -> list[PastOrder] {
     mine = [o for o in list_orders(state.biz) if o.customer_id == state.customer_id][:3];
     out = [
-        PastOrder(order_id=o.order_id, created_at=o.created_at,
+        PastOrder(order_id=o.order_id, created_at=o.created_at, status=o.status, total_kes=o.total_kes,
                   lines=[PastLine(sku=l.product_sku, name=l.product_name, quantity=l.quantity) for l in order_lines(o)])
         for o in mine
     ];
@@ -163,7 +165,7 @@ obj Brain {
 
     def decide(message: str, history: str, open_quote: str) -> AgentDecision by llm(
         tools=[self.search_catalogue, self.check_stock, self.suggest_alternatives, self.recent_orders],
-        max_react_iterations=5,
+        max_react_iterations=4,
         temperature=0.1
     );
 
@@ -179,8 +181,8 @@ sem Brain.check_stock.quantity = "The quantity the customer asked for.";
 sem Brain.suggest_alternatives = "List in-stock substitutes from the same category that can cover a requested quantity.";
 sem Brain.suggest_alternatives.sku = "The SKU that is short.";
 sem Brain.suggest_alternatives.quantity = "The quantity still needed.";
-sem Brain.recent_orders = "The customer's last orders, to answer 'the usual' or 'same as last time'.";
-sem Brain.decide = "You are the order desk assistant of a Kenyan wholesaler, chatting with a retailer who may write English, Swahili or Sheng. Decide what to do with the customer's latest message. Use the tools to find products and check stock; never invent SKUs, prices or stock. RULES: (1) You cannot place orders and must never say an order was placed, added or confirmed. To start an order, return action QUOTE with the products and quantities the customer asked for: the system will then build a priced quotation and ask the customer to confirm. (2) Stock shortages and substitutions are handled by the system when it builds the quotation, so do NOT ask about them: if the products and quantities are clear, return QUOTE with the full requested quantities even when stock is short. (3) For 'the usual' or 'same as last time', call recent_orders and return QUOTE with those lines. (4) If an item or quantity is genuinely unclear, or the customer asks which of several products they want, return CLARIFY with one short question; lines marked UNCERTAIN come from a photo and must be asked about, not guessed. (5) Use ANSWER only for greetings, catalogue or price questions, and things you do not stock. (6) Write in the customer's language, spell product names exactly as the tools return them, and mention a price only if a tool returned it.";
+sem Brain.recent_orders = "The customer's last orders with their CURRENT STATUS and totals. Use it for 'the usual' / 'same as last time' and for any question about an order's status.";
+sem Brain.decide = "You are the order desk assistant of a Kenyan wholesaler, chatting with a retailer who may write English, Swahili or Sheng. Decide what to do with the customer's latest message. Use the tools to find products and check stock; never invent SKUs, prices or stock. RULES: (1) You cannot place orders and must never say an order was placed, added or confirmed. To start an order, return action QUOTE with the products and quantities the customer asked for: the system will then build a priced quotation and ask the customer to confirm. (2) Stock shortages and substitutions are handled by the system when it builds the quotation, so do NOT ask about them: if the products and quantities are clear, return QUOTE with the full requested quantities even when stock is short. (3) For 'the usual' or 'same as last time', call recent_orders and return QUOTE with those lines. For questions about an existing order (status, delivery, what was ordered) call recent_orders and ANSWER from its result; the conversation history shows what was said before, use it to resolve words like 'it' or 'that order'. (4) If an item or quantity is genuinely unclear, or the customer asks which of several products they want, return CLARIFY with one short question; lines marked UNCERTAIN come from a photo and must be asked about, not guessed. (5) Use ANSWER only for greetings, catalogue or price questions, and things you do not stock. (6) Write in the customer's language, spell product names exactly as the tools return them, and mention a price only if a tool returned it.";
 sem Brain.decide.message = "The customer's latest message (or a transcript of their photographed list).";
 sem Brain.decide.history = "The last few messages of this conversation, oldest first.";
 sem Brain.decide.open_quote = "A summary of the open draft or quotation, or 'none'.";

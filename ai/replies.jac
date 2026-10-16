@@ -5,6 +5,18 @@ import re;
 import from domain.models { Quotation, QuotationLine, Order }
 import from domain.quotations { PlanNote }
 
+glob STATUS_EN: dict[str, str] = {
+    "DRAFT": "being prepared", "QUOTED": "quoted", "PENDING_APPROVAL": "waiting for the wholesaler's approval",
+    "APPROVED": "approved and being prepared", "PACKED": "packed and ready", "DISPATCHED": "on its way to you",
+    "DELIVERED": "delivered", "REJECTED": "not approved", "CANCELLED": "cancelled", "EXPIRED": "expired"
+};
+
+glob STATUS_SW: dict[str, str] = {
+    "DRAFT": "inaandaliwa", "QUOTED": "imetolewa bei", "PENDING_APPROVAL": "inasubiri idhini ya muuzaji",
+    "APPROVED": "imekubaliwa na inaandaliwa", "PACKED": "imefungwa na iko tayari", "DISPATCHED": "iko njiani kwako",
+    "DELIVERED": "imefika", "REJECTED": "haikukubaliwa", "CANCELLED": "imeghairiwa", "EXPIRED": "imeisha muda"
+};
+
 glob SWAHILI_WORDS: list[str] = [
     "nipe", "niletee", "naomba", "nataka", "tafadhali", "sawa", "ndio", "ndiyo", "hapana", "asante",
     "habari", "kama", "kawaida", "za", "ya", "kwa", "na", "mimi", "pia", "hii", "kuku", "samaki",
@@ -138,4 +150,52 @@ def reply_is_safe(text: str, allowed_prices: list[int]) -> bool {
         if value not in allowed_prices { return False; }
     }
     return True;
+}
+
+def status_label(lang: str, status: str) -> str {
+    table = STATUS_SW if lang == "sw" else STATUS_EN;
+    return table.get(status, status.lower());
+}
+
+"""Answer 'where is my order?' from the orders themselves: (order_id, status, total_kes) newest first."""
+def status_reply(lang: str, orders: list[tuple[str, str, int]]) -> str {
+    if not orders {
+        if lang == "sw" { return "Bado hujafanya oda yoyote. Ungependa kuagiza nini?"; }
+        return "You have no orders yet. What would you like to order?";
+    }
+    head = "Hali ya oda zako:" if lang == "sw" else "Your latest orders:";
+    rows = [f"• {oid} ({kes(total)}): {status_label(lang, status)}" for (oid, status, total) in orders];
+    return "\n".join([head] + rows);
+}
+
+"""The message sent to the customer when the wholesaler changes the order's status."""
+def order_update(lang: str, order_id: str, status: str, total: int) -> str {
+    label = status_label(lang, status);
+    if status == "APPROVED" {
+        if lang == "sw" { return f"Habari njema! Oda {order_id} ({kes(total)}) imekubaliwa na inaandaliwa."; }
+        return f"Good news! Order {order_id} ({kes(total)}) has been approved and is being prepared.";
+    }
+    if status == "DISPATCHED" {
+        if lang == "sw" { return f"Oda {order_id} imetumwa na iko njiani kwako."; }
+        return f"Order {order_id} has been dispatched and is on its way to you.";
+    }
+    if status == "DELIVERED" {
+        if lang == "sw" { return f"Oda {order_id} imefika. Asante kwa kununua nasi!"; }
+        return f"Order {order_id} has been delivered. Thank you for your business!";
+    }
+    if status == "REJECTED" {
+        if lang == "sw" { return f"Samahani, oda {order_id} haikukubaliwa. Muuzaji atawasiliana nawe."; }
+        return f"Sorry, order {order_id} could not be approved. The wholesaler will be in touch.";
+    }
+    if lang == "sw" { return f"Oda {order_id}: {label}."; }
+    return f"Order {order_id} is now {label}.";
+}
+
+def is_status_question(text: str) -> bool {
+    low = text.lower();
+    if re.search(r"\d", low) or len(low.split()) > 12 { return False; }
+    return bool(re.search(
+        r"status|where is my|where's my|hali ya|oda yangu|order yangu|imefika|iko wapi|my order|my orders|has it (been )?(approved|dispatched|delivered)|imetumwa\?|imekubaliwa\?",
+        low
+    ));
 }

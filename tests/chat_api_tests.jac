@@ -29,6 +29,11 @@ def as_guest(client: any, name: str, body: dict[str, any]) -> any {
     }
 }
 
+def last_text(client: any) -> str {
+    thread = call(client, "staff_get_conversation", {"query": {"customer_id": "C-001", "after_seq": 0}});
+    return thread["messages"][-1]["content"];
+}
+
 def say(client: any, token: str, cid: str, text: str) -> any {
     return as_guest(client, "send_chat_message", {"data": {"invite": token, "client_message_id": cid, "text": text}});
 }
@@ -165,5 +170,28 @@ test "the agent quotes in the chat, the customer confirms, and the wholesaler se
         assert len(orders) == 1 and orders[0]["status"] == "PENDING_APPROVAL" and orders[0]["total_kes"] == 14000;
         say(client, token, "q3", "proceed");
         assert len([o for o in call(client, "list_order_records", {}) if o["channel"] == "shop_chat"]) == 1;
+    } finally { client.close(); }
+}
+
+test "the customer is told in the chat when the wholesaler approves and dispatches, and can ask for status" {
+    client = new_client_as_owner();
+    try {
+        call(client, "load_demo_data", {});
+        token = invite_for(client, "C-001");
+        say(client, token, "n1", "Nipe cartons 5 za Rina 1L");
+        say(client, token, "n2", "sawa");
+        order_id = [o for o in call(client, "list_order_records", {}) if o["channel"] == "shop_chat"][0]["order_id"];
+        count_before = len(call(client, "staff_get_conversation", {"query": {"customer_id": "C-001", "after_seq": 0}})["messages"]);
+        call(client, "act_on_order", {"data": {"order_id": order_id, "action": "approve"}});
+        assert order_id in last_text(client) and "imekubaliwa" in last_text(client);
+        call(client, "act_on_order", {"data": {"order_id": order_id, "action": "dispatch"}});
+        assert "iko njiani" in last_text(client);
+        count_after = len(call(client, "staff_get_conversation", {"query": {"customer_id": "C-001", "after_seq": 0}})["messages"]);
+        assert count_after == count_before + 2;
+        again = call(client, "act_on_order", {"data": {"order_id": order_id, "action": "dispatch"}});
+        assert not again["ok"];
+        assert len(call(client, "staff_get_conversation", {"query": {"customer_id": "C-001", "after_seq": 0}})["messages"]) == count_after;
+        status = say(client, token, "n3", "status ya oda yangu");
+        assert order_id in status["messages"][-1]["content"] and "iko njiani" in status["messages"][-1]["content"];
     } finally { client.close(); }
 }
