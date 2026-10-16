@@ -41,11 +41,11 @@ Signed-in visitors to `/` are redirected to `/dashboard`.
 Implementation: `components/landing/Landing.jac`, mounted by `pages/index.jac`.
 
 1. **Header**: asterisk logo + "DukaFlow" + "/ for Kenyan wholesalers" (≥ lg); centred dot-separated links (How it works · Features · FAQ, ≥ md); right "Login" text link and "Try demo ↗" black pill.
-2. **Hero** (on `.wash-lime`): pill badge "⚡ Orders by chat and by photo" with lime arrow chip; H1 "Better Wholesale Ordering, From Chat To Dispatch" (display, 48/72 px); one-line subcopy; "Start taking orders ↗" large pill.
+2. **Hero** (on `.wash-lime`): pill badge "⚡ Orders by chat and by photo" with lime arrow chip; H1 "Better Wholesale Ordering, From Chat To Dispatch" (display, 48/72 px); subcopy mentioning English, Swahili and Sheng; "Start taking orders ↗" large pill.
 3. **Hero visual**: centred phone mock showing a Duka chat (retailer Swahili message, quote bubble ORD-1042 KSh 28,500, Confirm, "Sent for approval") and a ring showing "28.5K KSh quoted". Floating cards (≥ lg only): left, olive card "Photo order read · 4 lines · 1 needs a check" and white card "35 / 40 Rina 1L available"; right, olive card "ORD-1042 · Pending approval" and white card "Orders this week (sample)" with lime pill bars. Hand-drawn SVG arrows (`Squiggle`) point at the phone.
 4. **How it works** (`#how`): headline + side note; three white cards with lime icon chips and step numbers 01–03.
-5. **Features** (`#features`): large olive card "Stock is reserved only when you say yes" with a real-looking insufficient-stock message; lime card "Reads handwriting"; outline card "Whole-shilling prices".
-6. **FAQ** (`#faq`): hairline accordion, first item open, plus/minus in a round chip (lime when open), `aria-expanded`.
+5. **Features** (`#features`): large olive card "It looks things up before it answers" (the agent's four tools as lime chips and a real-looking shortage note); lime card "Reads handwriting"; outline card "You approve, then stock moves".
+6. **FAQ** (`#faq`): six questions (including languages and how prices and stock are handled), hairline accordion, first item open, plus/minus in a round chip (lime when open), `aria-expanded`.
 7. **Closing CTA** on `.wash-lime`: "Stop retyping orders. Start approving them." + pill.
 8. **Footer**: logo, links, "© 2026 DukaFlow AI · Hackathon prototype built with Jac".
 
