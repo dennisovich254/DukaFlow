@@ -129,3 +129,92 @@ obj DashboardSummaryView {
         low_stock_count: int,
         recent_orders: list[OrderView];
 }
+
+"""One chat message as shown in either chat UI."""
+obj MessageView {
+    has seq: int,
+        sender_type: str,
+        message_type: str,
+        content: str,
+        created_at: str,
+        media_ref: str = "",
+        client_message_id: str = "";
+}
+
+obj ChatResult {
+    has ok: bool,
+        messages: list[MessageView] = [],
+        error: ApiError | None = None;
+}
+
+"""Public (customer) chat input: identified only by the invite token."""
+obj ChatInput {
+    has invite: str,
+        client_message_id: str,
+        text: str = "",
+        photo_base64: str = "",
+        photo_mime_type: str = "",
+        photo_name: str = "";
+}
+
+obj ConversationQuery {
+    has invite: str,
+        after_seq: int = 0;
+}
+
+obj ImageQuery {
+    has invite: str,
+        media_ref: str;
+}
+
+obj ImageResult {
+    has ok: bool,
+        data_url: str = "",
+        error: ApiError | None = None;
+}
+
+obj ChatSessionQuery {
+    has invite: str;
+}
+
+obj ChatSessionResult {
+    has ok: bool,
+        business_name: str = "",
+        customer_name: str = "",
+        error: ApiError | None = None;
+}
+
+"""Wholesaler-side reads of a conversation (login required, keyed by customer id)."""
+obj StaffConversationQuery {
+    has customer_id: str,
+        after_seq: int = 0;
+}
+
+obj StaffImageQuery {
+    has customer_id: str,
+        media_ref: str;
+}
+
+obj InviteQuery {
+    has customer_id: str;
+}
+
+obj InviteResult {
+    has ok: bool,
+        token: str = "",
+        error: ApiError | None = None;
+}
+
+obj RevokeResult {
+    has ok: bool,
+        revoked: int = 0,
+        error: ApiError | None = None;
+}
+
+obj ConversationSummaryView {
+    has customer_id: str,
+        customer_name: str,
+        last_message: str,
+        last_at: str,
+        message_count: int;
+}
