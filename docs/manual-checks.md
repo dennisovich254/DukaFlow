@@ -37,7 +37,7 @@
 ## G5: order review and agent activity
 
 1. Place a chat order (see G4) with a shortage, e.g. `Niletee Rina 1L carton 10 na Jogoo 2kg bale 5`, then confirm with `sawa`.
-2. **Overview → Agent activity**: both runs appear within about 5 seconds, the first as QUOTED with the tools it called, the second as ORDER_PLACED.
+2. **Agent activity** (sidebar): both runs appear within about 5 seconds, the first as QUOTED with the tools it called, the second as ORDER_PLACED.
 3. **Orders → Review** on the new order: the customer's messages (and photos, if you sent one) are on the left; on the right the lines, the amber shortage note ("only 8 available; added 2 × Fresh Fri…"), and the agent's steps.
 4. Click **Approve** inside the dialog: the status changes and the customer's chat receives the approval message.
 5. Review a hand-entered order: it says "Entered by hand: no chat messages."

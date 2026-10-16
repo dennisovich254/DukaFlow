@@ -1,7 +1,7 @@
 import from "@jac/runtime" { Link, useLocation, useNavigate, jacLogout }
 import from "@hugeicons/react" { HugeiconsIcon }
 import from "@hugeicons/core-free-icons" {
-    DashboardSquare01Icon, File01Icon, UserIcon, Folder01Icon, Logout01Icon, Asterisk02Icon
+    DashboardSquare01Icon, File01Icon, UserIcon, Folder01Icon, Logout01Icon, Asterisk02Icon, AiBrain01Icon
 }
 import from ..ui.sidebar {
     SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarGroup,
@@ -13,7 +13,8 @@ glob NAV_ITEMS: list[dict[str, any]] = [
     {"to": "/dashboard", "label": "Overview", "icon": DashboardSquare01Icon},
     {"to": "/dashboard/orders", "label": "Orders", "icon": File01Icon},
     {"to": "/dashboard/customers", "label": "Customers", "icon": UserIcon},
-    {"to": "/dashboard/products", "label": "Products & stock", "icon": Folder01Icon}
+    {"to": "/dashboard/products", "label": "Products & stock", "icon": Folder01Icon},
+    {"to": "/dashboard/agent", "label": "Agent activity", "icon": AiBrain01Icon}
 ];
 
 # Styled like SidebarMenuButton. The installed SidebarMenuButton forwards its
