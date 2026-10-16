@@ -5,6 +5,7 @@ import from domain.models {
 }
 import from domain.errors { DomainError }
 import from domain.pricing { validate_price_kes }
+import from domain.audit { record_audit_event }
 
 glob UNITS: list[str] = ["carton", "bale", "dozen", "bag", "crate", "piece", "bottle", "packet", "kg", "litre"];
 
@@ -80,12 +81,13 @@ def list_products(biz: Business, include_inactive: bool = False) -> list[Product
 def update_product(
     biz: Business, sku: str, name: str | None = None, brand: str | None = None,
     category: str | None = None, unit: str | None = None, price_kes: any = None,
-    aliases: list[str] | None = None, active: bool | None = None
+    aliases: list[str] | None = None, active: bool | None = None, actor: str = "wholesaler"
 ) -> Product {
     product = get_product(biz, sku);
     new_name = require_text(name, "Name") if name is not None else product.name;
     new_unit = require_unit(unit) if unit is not None else product.unit;
     new_price = validate_price_kes(price_kes) if price_kes is not None else product.price_kes;
+    old_price = product.price_kes;
     product.name = new_name;
     product.unit = new_unit;
     product.price_kes = new_price;
@@ -93,5 +95,8 @@ def update_product(
     if category is not None { product.category = category.strip(); }
     if aliases is not None { product.aliases = [a.strip().lower() for a in aliases if a.strip()]; }
     if active is not None { product.active = active; }
+    if new_price != old_price {
+        record_audit_event(biz, actor, "PRICE_CHANGED", product.sku, str(old_price), str(new_price));
+    }
     return product;
 }
