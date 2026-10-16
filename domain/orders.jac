@@ -209,3 +209,43 @@ def apply_order_action(
     if action == "cancel" { return cancel_order(biz, order_id, actor); }
     raise DomainError(code="VALIDATION_ERROR", message=f"Unknown order action {action}");
 }
+
+obj OrderLineSpec {
+    has sku: str,
+        name: str,
+        quantity: int,
+        unit: str,
+        unit_price_kes: int;
+}
+
+"""Create an order from explicit lines (a confirmed quotation), keeping the quoted prices.
+Chat orders enter the approval queue as PENDING_APPROVAL."""
+def create_order_from_lines(
+    biz: Business, customer_id: str, specs: list[OrderLineSpec], channel: str, actor: str
+) -> Order {
+    customer = get_customer(biz, customer_id);
+    if not specs {
+        raise DomainError(code="VALIDATION_ERROR", message="An order needs at least one item");
+    }
+    order = Order(
+        order_id=f"ORD-{biz.next_order_number}", customer_id=customer.customer_id,
+        created_at=now_iso(), channel=channel
+    );
+    total = 0;
+    for spec in specs {
+        line_total = calculate_line_total(spec.unit_price_kes, spec.quantity);
+        line = OrderLine(
+            product_sku=spec.sku, product_name=spec.name, quantity=spec.quantity, unit=spec.unit,
+            unit_price_kes=spec.unit_price_kes, line_total_kes=line_total
+        );
+        order +>:ContainsLine():+> line;
+        product = find_product(biz, spec.sku);
+        if product is not None { line +>:ReferencesProduct():+> product; }
+        total += line_total;
+    }
+    order.total_kes = total;
+    biz.next_order_number += 1;
+    biz +>:HasOrder():+> order;
+    customer +>:PlacedOrder():+> order;
+    return submit_order(biz, order.order_id, actor);
+}
