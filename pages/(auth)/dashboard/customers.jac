@@ -1,6 +1,7 @@
 import from "sonner" { toast }
 import from ....api.customers { list_customer_records, add_customer }
-import from ....api.contracts { CustomerView, CustomerResult, NewCustomerInput }
+import from ....api.chat { create_chat_invite, revoke_chat_invites }
+import from ....api.contracts { CustomerView, CustomerResult, NewCustomerInput, InviteQuery, InviteResult }
 import from ....components.dashboard.Shell { DashboardShell, PageHeader }
 import from ....components.ui.button { Button }
 import from ....components.ui.input { Input }
@@ -19,6 +20,8 @@ def:pub CustomersPage() -> JsxPage {
     has saving: bool = False;
     has name: str = "";
     has phone: str = "";
+    has linkFor: str = "";
+    has linkUrl: str = "";
 
     async def refresh {
         customers = await list_customer_records();
@@ -44,6 +47,34 @@ def:pub CustomersPage() -> JsxPage {
         }
     }
 
+    def link_for(token: str) -> str {
+        return window.location.origin + "/chat?invite=" + token;
+    }
+
+    async def make_link(c: CustomerView) {
+        res: InviteResult | None = None;
+        res = await create_chat_invite(InviteQuery(customer_id=c.customer_id));
+        if res.ok {
+            linkFor = c.name;
+            linkUrl = link_for(res.token);
+            try { await navigator.clipboard.writeText(linkUrl); toast.success("Link copied"); } except Exception { toast.message("Copy the link below"); }
+        } elif res.error is not None {
+            toast.error(res.error.message);
+        }
+    }
+
+    async def open_as(c: CustomerView) {
+        res: InviteResult | None = None;
+        res = await create_chat_invite(InviteQuery(customer_id=c.customer_id));
+        if res.ok { window.open(link_for(res.token), "_blank"); }
+        elif res.error is not None { toast.error(res.error.message); }
+    }
+
+    async def revoke(c: CustomerView) {
+        res = await revoke_chat_invites(InviteQuery(customer_id=c.customer_id));
+        if res.ok { toast.success(f"Revoked links for {c.name}"); }
+    }
+
     <DashboardShell>
         <PageHeader title="Customers" description="Retailers who order from you.">
             <Button onClick={lambda { name = ""; phone = ""; adding = True; }}>Add customer</Button>
@@ -61,6 +92,7 @@ def:pub CustomersPage() -> JsxPage {
                                 <TableHead>ID</TableHead>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Phone</TableHead>
+                                <TableHead>Chat</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -69,6 +101,13 @@ def:pub CustomersPage() -> JsxPage {
                                     <TableCell className="font-mono text-xs">{c.customer_id}</TableCell>
                                     <TableCell className="font-medium">{c.name}</TableCell>
                                     <TableCell className="tabular-nums">{c.phone}</TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-wrap gap-2">
+                                            <Button size="sm" onClick={lambda { make_link(c); }}>Chat link</Button>
+                                            <Button size="sm" variant="outline" onClick={lambda { open_as(c); }}>Open as customer</Button>
+                                            <Button size="sm" variant="ghost" onClick={lambda { revoke(c); }}>Revoke links</Button>
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             }}
                         </TableBody>
@@ -76,6 +115,18 @@ def:pub CustomersPage() -> JsxPage {
                 }}
             </CardContent>
         </Card>
+        <Dialog open={linkUrl != ""} onOpenChange={lambda (v: bool) { if not v { linkUrl = ""; } }}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Chat link for {linkFor}</DialogTitle>
+                    <DialogDescription>Shown once. Send it to the customer; it opens their chat with no sign-in. Creating a new link does not cancel older ones; use Revoke links to cancel them.</DialogDescription>
+                </DialogHeader>
+                <Input readOnly={True} value={linkUrl} aria-label="Chat link" onFocus={lambda (e: any) { e.target.select(); }} />
+                <DialogFooter>
+                    <Button type="button" onClick={lambda { linkUrl = ""; }}>Done</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
         <Dialog open={adding} onOpenChange={lambda (v: bool) { adding = v; }}>
             <DialogContent>
                 <DialogHeader>
