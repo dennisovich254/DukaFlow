@@ -111,3 +111,26 @@ node AuditEvent(SharedNode) {
 }
 
 edge HasAudit(SharedEdge): Business --> AuditEvent {}
+
+"""One chat thread per customer, whatever the channel."""
+node Conversation(SharedNode) {
+    has customer_id: str,
+        created_at: str,
+        next_seq: int = 1;
+}
+
+"""A single chat message, inbound from the retailer or outbound from the agent."""
+node Message(SharedNode) {
+    has seq: int,
+        client_message_id: str,
+        sender_type: str,
+        channel: str,
+        message_type: str,
+        content: str,
+        created_at: str,
+        media_ref: str = "",
+        media_mime_type: str = "";
+}
+
+edge HasConversation(SharedEdge): Business --> Conversation {}
+edge ContainsMessage(SharedEdge): Conversation --> Message {}
