@@ -2,13 +2,16 @@ import from "sonner" { toast }
 import from ....api.products { list_catalogue }
 import from ....api.customers { list_customer_records }
 import from ....api.orders { list_order_records, create_order, act_on_order }
+import from ....api.review { order_review }
 import from ....api.contracts {
-    ProductView, CustomerView, OrderView, OrderResult, CatalogueQuery, NewOrderInput, OrderActionInput
+    ProductView, CustomerView, OrderView, OrderResult, CatalogueQuery, NewOrderInput, OrderActionInput,
+    ReviewView, ReviewResult, OrderLookup
 }
 import from ....domain.order_input { OrderItemInput }
 import from ....lib.money { format_kes }
 import from ....components.dashboard.Shell { DashboardShell, PageHeader }
 import from ....components.dashboard.StatusBadge { StatusBadge }
+import from ....components.dashboard.PhotoThumb { PhotoThumb }
 import from ....components.ui.button { Button }
 import from ....components.ui.input { Input }
 import from ....components.ui.field { Field, FieldLabel, FieldGroup }
@@ -45,6 +48,8 @@ def:pub OrdersPage() -> JsxPage {
     has saving: bool = False;
     has customerId: str = "";
     has lines: list[DraftLine] = [];
+    has review: ReviewView | None = None;
+    has reviewingId: str = "";
 
     async def refresh {
         orders = await list_order_records();
@@ -70,6 +75,19 @@ def:pub OrdersPage() -> JsxPage {
         }
         await refresh();
         products = await list_catalogue(CatalogueQuery(include_inactive=False));
+    }
+
+    async def open_review(orderId: str) {
+        reviewingId = orderId;
+        review = None;
+        res = await order_review(OrderLookup(order_id=orderId));
+        if res.ok and res.review is not None { review = res.review; }
+    }
+
+    async def review_action(orderId: str, action: str) {
+        await run_action(orderId, action);
+        res = await order_review(OrderLookup(order_id=orderId));
+        if res.ok and res.review is not None { review = res.review; }
     }
 
     def first_sku() -> str {
@@ -161,6 +179,7 @@ def:pub OrdersPage() -> JsxPage {
                                     <TableCell className="capitalize">{o.channel}</TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
+                                            <Button size="sm" variant="ghost" onClick={lambda { open_review(o.order_id); }}>Review</Button>
                                             {for a in ORDER_ACTIONS.get(o.status, []) {
                                                 <Button key={a[0]} size="sm"
                                                     variant={"default" if a[0] in ["approve", "submit", "dispatch"] else "outline"}
@@ -175,6 +194,72 @@ def:pub OrdersPage() -> JsxPage {
                 }}
             </CardContent>
         </Card>
+        <Dialog open={reviewingId != ""} onOpenChange={lambda (v: bool) { if not v { reviewingId = ""; review = None; } }}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Order {reviewingId}</DialogTitle>
+                    <DialogDescription>What the customer sent, how the agent read it, and the quoted lines.</DialogDescription>
+                </DialogHeader>
+                {if review is None {
+                    <p className="text-sm text-muted-foreground">Loading…</p>
+                } else {
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <div className="flex flex-col gap-3">
+                            <h3 className="text-sm font-medium">What the customer sent</h3>
+                            {if len(review.messages) == 0 {
+                                <p className="text-sm text-muted-foreground">Entered by hand: no chat messages.</p>
+                            }}
+                            {for m in review.messages {
+                                <div key={str(m.seq)} className={"flex " + ("justify-end" if m.sender_type == "customer" else "justify-start")}>
+                                    <div className={"max-w-[85%] rounded-2xl pt-2 pb-2 pl-3 pr-3 text-sm " + ("bg-primary text-primary-foreground" if m.sender_type == "customer" else "border bg-muted")}>
+                                        {if m.message_type == "image" {
+                                            <PhotoThumb customerId={review.order.customer_id} mediaRef={m.media_ref} />
+                                        }}
+                                        {if m.content { <p className="whitespace-pre-line break-words">{m.content}</p> }}
+                                    </div>
+                                </div>
+                            }}
+                        </div>
+                        <div className="flex flex-col gap-4">
+                            <div>
+                                <h3 className="text-sm font-medium">Order lines</h3>
+                                <p className="text-xs text-muted-foreground">{review.order.customer_name} · {review.order.channel} {"· quote " + review.quote_id if review.quote_id else ""}</p>
+                                <ul className="mt-2 divide-y text-sm">
+                                    {for l in review.order.lines {
+                                        <li key={l.product_sku} className="flex justify-between gap-3 pt-2 pb-2">
+                                            <span>{l.quantity} × {l.product_name}</span>
+                                            <span className="tabular-nums">{format_kes(l.line_total_kes)}</span>
+                                        </li>
+                                    }}
+                                </ul>
+                                <p className="mt-2 flex justify-between text-sm font-semibold"><span>Total</span><span className="tabular-nums">{format_kes(review.order.total_kes)}</span></p>
+                                {for n in review.quote_notes { <p key={n} className="mt-2 rounded-lg bg-amber-50 pt-2 pb-2 pl-3 pr-3 text-xs text-amber-900">{n}</p> }}
+                            </div>
+                            {if len(review.executions) > 0 {
+                                <div>
+                                    <h3 className="text-sm font-medium">How the agent read it</h3>
+                                    <ul className="mt-2 flex flex-col gap-2">
+                                        {for e in review.executions {
+                                            <li key={str(e.message_seq)} className="rounded-lg border pt-2 pb-2 pl-3 pr-3 text-xs">
+                                                <p className="font-medium">{e.input_type == "image" and "Photo" or "Text"} → {e.outcome} · {e.duration_ms} ms</p>
+                                                {for (i, st) in enumerate(e.steps) { <p key={str(i)} className="font-mono text-[11px] text-muted-foreground break-words">{st}</p> }}
+                                            </li>
+                                        }}
+                                    </ul>
+                                </div>
+                            }}
+                            <div className="flex items-center gap-2">
+                                <StatusBadge status={review.order.status} />
+                                {for a in ORDER_ACTIONS.get(review.order.status, []) {
+                                    <Button key={a[0]} size="sm" variant={"default" if a[0] in ["approve", "submit", "dispatch"] else "outline"}
+                                        onClick={lambda { review_action(reviewingId, a[0]); }}>{a[1]}</Button>
+                                }}
+                            </div>
+                        </div>
+                    </div>
+                }}
+            </DialogContent>
+        </Dialog>
         <Dialog open={creating} onOpenChange={lambda (v: bool) { creating = v; }}>
             <DialogContent>
                 <DialogHeader>

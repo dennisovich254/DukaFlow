@@ -77,7 +77,9 @@ node Order(SharedNode) {
         created_at: str,
         status: str = "DRAFT",
         channel: str = "manual",
-        total_kes: int = 0;
+        total_kes: int = 0,
+        quote_id: str = "",
+        source_seq: int = 0;
 }
 
 """One product line on an order, with the price captured at order time."""

@@ -41,3 +41,15 @@ def calculate_order_total(lines: list[tuple[int, int]]) -> int {
     }
     return total;
 }
+
+"""Whole shillings as text, e.g. KSh 14,000."""
+def format_kes(amount: int) -> str {
+    digits = str(abs(amount));
+    groups: list[str] = [];
+    while len(digits) > 3 {
+        groups = [digits[len(digits) - 3:]] + groups;
+        digits = digits[:len(digits) - 3];
+    }
+    groups = [digits] + groups;
+    return ("-" if amount < 0 else "") + "KSh " + ",".join(groups);
+}

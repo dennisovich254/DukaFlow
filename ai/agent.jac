@@ -201,6 +201,7 @@ def handle(
             }
             try {
                 order = confirm_quotation(biz, cid);
+                order.source_seq = msg.seq;
                 state.trace.append(f"confirm_quotation -> {order.order_id}");
                 return AgentOutcome(reply=order_placed(lang, order.order_id, order.total_kes), outcome="ORDER_PLACED");
             } except DomainError as e {

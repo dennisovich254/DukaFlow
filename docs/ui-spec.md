@@ -87,3 +87,11 @@ Each customer row gets two small pill buttons: **Chat link** (creates a fresh in
 ## Planned (specify here before building)
 
 - P5 Order review: detail drawer with original photo beside parsed lines; agent activity panel.
+
+
+## Order review and agent activity (P5)
+
+- **Orders table**: each row has a **Review** ghost button before its status actions.
+- **Review dialog** (`max-w-3xl`, scrolls): two columns on `md`+, stacked on phones. Left, "What the customer sent": the last 8 chat messages up to the confirmation (customer bubbles ink, agent bubbles muted) with photos as thumbnails that enlarge on tap. Right: "Order lines" (quantity × product, line total, bold total), an amber note per shortage or substitution, "How the agent read it" (one card per run: input type, outcome, duration, then each tool step in small monospace), and the status badge with the same action buttons as the table.
+- **Hand-entered orders** show "Entered by hand: no chat messages."
+- **Overview "Agent activity" card**: the 10 newest agent runs, each with customer name, input type (text or photo), an outcome pill (lime), the arrow-joined list of tools called (or "answered directly, no tools needed") and the duration; refreshes every 5 seconds.
