@@ -221,7 +221,7 @@ obj OrderLineSpec {
 """Create an order from explicit lines (a confirmed quotation), keeping the quoted prices.
 Chat orders enter the approval queue as PENDING_APPROVAL."""
 def create_order_from_lines(
-    biz: Business, customer_id: str, specs: list[OrderLineSpec], channel: str, actor: str
+    biz: Business, customer_id: str, specs: list[OrderLineSpec], channel: str, actor: str, quote_id: str = ""
 ) -> Order {
     customer = get_customer(biz, customer_id);
     if not specs {
@@ -229,7 +229,7 @@ def create_order_from_lines(
     }
     order = Order(
         order_id=f"ORD-{biz.next_order_number}", customer_id=customer.customer_id,
-        created_at=now_iso(), channel=channel
+        created_at=now_iso(), channel=channel, quote_id=quote_id
     );
     total = 0;
     for spec in specs {

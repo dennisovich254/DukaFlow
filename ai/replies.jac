@@ -5,6 +5,7 @@ English ("en"), Swahili ("sw") or Sheng, the Nairobi street mix ("sh")."""
 import re;
 import from domain.models { Quotation, QuotationLine, Order }
 import from domain.quotations { PlanNote }
+import from domain.pricing { format_kes }
 
 # Function words only: product names (sukari, unga, kuku...) appear in English sentences too.
 glob EN_WORDS: list[str] = [
@@ -66,14 +67,7 @@ def pick(lang: str, en: str, sw: str, sh: str) -> str {
 }
 
 def kes(amount: int) -> str {
-    digits = str(abs(amount));
-    groups: list[str] = [];
-    while len(digits) > 3 {
-        groups = [digits[len(digits) - 3:]] + groups;
-        digits = digits[:len(digits) - 3];
-    }
-    groups = [digits] + groups;
-    return "KSh " + ",".join(groups);
+    return format_kes(amount);
 }
 
 glob STATUS_EN: dict[str, str] = {

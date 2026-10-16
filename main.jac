@@ -6,6 +6,7 @@ import from api.customers { list_customer_records, add_customer }
 import from api.orders { list_order_records, get_order_record, create_order, act_on_order }
 import from api.dashboard { dashboard_summary, load_demo_data }
 import from api.chat { send_chat_message, get_conversation, get_chat_image, get_chat_session }
+import from api.review { order_review, recent_agent_activity }
 
 import from .components.ui.sonner { Toaster }
 import ".styles.global.css";

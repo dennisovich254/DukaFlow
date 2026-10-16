@@ -1,9 +1,10 @@
 import from "sonner" { toast }
 import from "@jac/runtime" { Link }
 import from ....api.dashboard { dashboard_summary, load_demo_data }
+import from ....api.review { recent_agent_activity }
 import from ....api.customers { list_customer_records }
 import from ....api.products { list_catalogue }
-import from ....api.contracts { OrderView, CustomerView, ProductView, CatalogueQuery }
+import from ....api.contracts { OrderView, CustomerView, ProductView, CatalogueQuery, ExecutionView }
 import from ....lib.money { format_kes }
 import from ....components.dashboard.Shell { DashboardShell, PageHeader }
 import from ....components.dashboard.StatusBadge { StatusBadge }
@@ -20,6 +21,7 @@ def:pub OverviewPage() -> JsxPage {
     has pendingApproval: int = 0;
     has lowStock: int = 0;
     has aiMode: str = "live";
+    has activity: list[ExecutionView] = [];
     has loading: bool = True;
 
     async def load_all {
@@ -31,7 +33,12 @@ def:pub OverviewPage() -> JsxPage {
         lowStock = summary.low_stock_count;
         aiMode = summary.ai_mode;
         customers = await list_customer_records();
+        activity = await recent_agent_activity();
         loading = False;
+    }
+
+    async def refresh_activity {
+        activity = await recent_agent_activity();
     }
 
     async def seed(e: MouseEvent) {
@@ -43,6 +50,11 @@ def:pub OverviewPage() -> JsxPage {
     async can with entry {
         await load_all();
     }
+
+    useEffect(lambda {
+        timer = setInterval(lambda { refresh_activity(); }, 5000);
+        return lambda { clearInterval(timer); };
+    }, []);
 
     <DashboardShell>
         <PageHeader title="Overview" description="What is happening in your business today.">
@@ -59,6 +71,34 @@ def:pub OverviewPage() -> JsxPage {
             <Card><CardHeader><CardDescription>Low or out of stock</CardDescription><CardTitle className="text-3xl font-semibold tabular-nums">{"–" if loading else lowStock}</CardTitle></CardHeader></Card>
             <Card><CardHeader><CardDescription>Customers</CardDescription><CardTitle className="text-3xl font-semibold tabular-nums">{"–" if loading else len(customers)}</CardTitle></CardHeader></Card>
         </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Agent activity</CardTitle>
+                <CardDescription>What the chat agent just did: tools it called and how each message ended.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {if len(activity) == 0 {
+                    <p className="text-sm text-muted-foreground">No chat messages yet. Create a chat link on the Customers page and send a message.</p>
+                } else {
+                    <ul className="flex flex-col gap-3">
+                        {for (i, a) in enumerate(activity) {
+                            <li key={str(i) + a.created_at} className="rounded-xl border pt-3 pb-3 pl-4 pr-4 text-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="font-medium">{a.customer_name} · {"photo" if a.input_type == "image" else "text"}</span>
+                                    <span className="rounded-full bg-[#e7f8c4] pt-0.5 pb-0.5 pl-2.5 pr-2.5 text-xs font-medium text-[#1a2e05]">{a.outcome}</span>
+                                </div>
+                                {if len(a.steps) > 0 {
+                                    <p className="mt-1 break-words font-mono text-[11px] text-muted-foreground">{" → ".join([st.split("(")[0] for st in a.steps])}</p>
+                                } else {
+                                    <p className="mt-1 text-xs text-muted-foreground">answered directly, no tools needed</p>
+                                }}
+                                <p className="mt-1 text-[11px] text-muted-foreground">{a.duration_ms} ms</p>
+                            </li>
+                        }}
+                    </ul>
+                }}
+            </CardContent>
+        </Card>
         <Card>
             <CardHeader>
                 <CardTitle>Recent orders</CardTitle>

@@ -6,7 +6,7 @@ import from domain.models {
 }
 import from domain.errors { DomainError }
 import from domain.catalogue { list_products, find_product, inventory_of }
-import from domain.pricing { calculate_line_total, validate_quantity }
+import from domain.pricing { calculate_line_total, validate_quantity, format_kes }
 import from domain.messaging { get_or_create_conversation }
 import from domain.orders { create_order_from_lines, OrderLineSpec }
 import from domain.clock { now_iso, now_iso_precise, iso_in_hours }
@@ -29,6 +29,15 @@ obj PlanNote {
         alt_name: str = "",
         alt_qty: int = 0,
         alt_price: int = 0;
+}
+
+"""One English sentence for the wholesaler about why a line differs from the request."""
+def staff_note(n: PlanNote) -> str {
+    if n.kind == "UNAVAILABLE" { return f"{n.name}: wanted {n.wanted}, out of stock."; }
+    if n.alt_sku != "" {
+        return f"{n.name}: wanted {n.wanted}, only {n.available} available; added {n.alt_qty} × {n.alt_name} ({format_kes(n.alt_price)}) for the rest.";
+    }
+    return f"{n.name}: wanted {n.wanted}, only {n.available} available.";
 }
 
 obj QuotePlan {
@@ -109,7 +118,7 @@ def build_quotation(biz: Business, customer_id: str, plan: QuotePlan, status: st
     q = Quotation(
         quote_id=f"Q-{biz.next_quote_number}", customer_id=customer_id, status=status,
         created_at=now_iso_precise(), expires_at=iso_in_hours(QUOTE_TTL_HOURS),
-        notes=[f"{n.kind} {n.sku} wanted {n.wanted} available {n.available}" for n in plan.notes]
+        notes=[staff_note(n) for n in plan.notes]
     );
     total = 0;
     for r in plan.lines {
@@ -156,7 +165,7 @@ def confirm_quotation(biz: Business, customer_id: str) -> Order {
         OrderLineSpec(sku=l.product_sku, name=l.product_name, quantity=l.quantity, unit=l.unit, unit_price_kes=l.unit_price_kes)
         for l in quotation_lines(q)
     ];
-    order = create_order_from_lines(biz, customer_id, specs, "shop_chat", "agent");
+    order = create_order_from_lines(biz, customer_id, specs, "shop_chat", "agent", q.quote_id);
     q.status = "CONFIRMED";
     return order;
 }

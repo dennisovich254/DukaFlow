@@ -219,3 +219,30 @@ obj ConversationSummaryView {
         last_at: str,
         message_count: int;
 }
+
+"""One agent run, for the activity panel and the order review."""
+obj ExecutionView {
+    has message_seq: int,
+        customer_id: str,
+        customer_name: str,
+        input_type: str,
+        outcome: str,
+        duration_ms: int,
+        created_at: str,
+        steps: list[str];
+}
+
+"""Everything the wholesaler needs to review an order: what the customer sent, how the agent read it."""
+obj ReviewView {
+    has order: OrderView,
+        quote_id: str,
+        quote_notes: list[str],
+        messages: list[MessageView],
+        executions: list[ExecutionView];
+}
+
+obj ReviewResult {
+    has ok: bool,
+        review: ReviewView | None = None,
+        error: ApiError | None = None;
+}
