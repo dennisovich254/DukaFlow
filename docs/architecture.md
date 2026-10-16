@@ -19,3 +19,4 @@ A chat message becomes an `InboundMessage`, is stored, and then `walker Customer
 | Fri 16 Oct, 17:05 | P0.4 smoke | 1 text, 1 image | typed output and image reading worked |
 | Fri 16 Oct, ~21:00 | P4.9 first agent check | 5 text messages | found two prompt mistakes: asked about shortages instead of quoting; claimed an order was placed. Both fixed in the decision instructions |
 | Fri 16 Oct, ~21:25 | P4.9 recheck | shortage, "the usual", sample photo | shortage quoted at KSh 35,550; "the usual" quoted from history; photo read and quoted; one order created only after "sawa" |
+| Sat 17 Oct, ~01:55 | P6.6 text evaluation | 11 typed cases (`scripts/eval_text.jac`) | 11/11 passed; details in `docs/evaluation.md` |
