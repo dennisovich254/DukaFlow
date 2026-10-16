@@ -9,7 +9,7 @@ Wholesaler side (`def:protect`): invite management and read-only conversation vi
 
 import base64;
 import from jaclang.server.identity.app_tokens { token_create, token_peek, token_revoke }
-import from domain.models { Business, Message }
+import from domain.models { Business, Message, Conversation }
 import from domain.errors { DomainError }
 import from domain.customers { get_customer }
 import from domain.messaging {
@@ -17,6 +17,8 @@ import from domain.messaging {
     list_messages, find_message, deterministic_reply, conversation_summaries
 }
 import from integrations.media { store_chat_image, media_path }
+import from ai.agent { CustomerAgent }
+import from ai.replies { holding, lang_of }
 import from config.settings { settings_from_env }
 import from api.business { current_business, find_business }
 import from api.results { to_api_error }
@@ -65,6 +67,16 @@ def message_view(m: Message) -> MessageView {
         seq=m.seq, sender_type=m.sender_type, message_type=m.message_type, content=m.content,
         created_at=m.created_at, media_ref=m.media_ref, client_message_id=m.client_message_id
     );
+}
+
+"""Run the customer agent (a walker entered on the conversation). The agent records its own
+reply, so every write to the conversation happens inside one traversal."""
+def run_agent(conv: Conversation, biz: Business, customer_id: str, sent: Message) {
+    try {
+        conv spawn CustomerAgent(customer_id=customer_id, message_seq=sent.seq);
+    } except Exception {
+        record_outbound(biz, customer_id, holding(lang_of(sent.content)));
+    }
 }
 
 def decode_photo(encoded: str) -> bytes {
@@ -125,8 +137,9 @@ def:pub send_chat_message(data: ChatInput) -> ChatResult {
             );
         }
         sent = record_inbound(ctx.biz, inbound);
-        record_outbound(ctx.biz, ctx.customer_id, deterministic_reply(sent.message_type));
-        return ChatResult(ok=True, messages=[message_view(m) for m in list_messages(conv)]);
+        run_agent(conv, ctx.biz, ctx.customer_id, sent);
+        fresh = get_or_create_conversation(ctx.biz, ctx.customer_id);
+        return ChatResult(ok=True, messages=[message_view(m) for m in list_messages(fresh)]);
     } except DomainError as e {
         return ChatResult(ok=False, error=to_api_error(e));
     }

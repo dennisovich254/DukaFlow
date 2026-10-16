@@ -97,7 +97,7 @@ test "an invite reaches only its own customer and its own business" {
 test "photos work anonymously and are only served from the token's own conversation" {
     client = new_client_as_owner();
     try {
-        seed(client);
+        call(client, "load_demo_data", {});
         token = invite_for(client, "C-001");
         r = as_guest(client, "send_chat_message", {"data": {
             "invite": token, "client_message_id": "p1", "text": "",
@@ -106,7 +106,7 @@ test "photos work anonymously and are only served from the token's own conversat
         assert r["ok"], r["error"];
         first = r["messages"][0];
         assert first["message_type"] == "image" and first["media_ref"].endswith(".jpg");
-        assert r["messages"][1]["content"] == "Tumepokea picha yako. Tunaishughulikia.";
+        assert "sukari" in r["messages"][1]["content"];
         img = as_guest(client, "get_chat_image", {"query": {"invite": token, "media_ref": first["media_ref"]}});
         assert img["ok"] and img["data_url"].startswith("data:image/jpeg;base64,");
         nope = as_guest(client, "get_chat_image", {"query": {"invite": token, "media_ref": "other.jpg"}});
@@ -146,5 +146,24 @@ test "wholesaler chat endpoints require login" {
         }
         assert client.post("/function/staff_get_conversation", json={"query": {"customer_id": "C-001"}}).status_code == 401;
         assert client.post("/function/staff_get_chat_image", json={"query": {"customer_id": "C-001", "media_ref": "a.jpg"}}).status_code == 401;
+    } finally { client.close(); }
+}
+
+test "the agent quotes in the chat, the customer confirms, and the wholesaler sees a pending order" {
+    client = new_client_as_owner();
+    try {
+        call(client, "load_demo_data", {});
+        token = invite_for(client, "C-001");
+        q = say(client, token, "q1", "Nipe cartons 5 za Rina 1L");
+        reply = q["messages"][-1]["content"];
+        assert q["ok"] and "KSh 14,000" in reply and "5 × Rina" in reply;
+        before = [o for o in call(client, "list_order_records", {}) if o["channel"] == "shop_chat"];
+        assert before == [];
+        ok = say(client, token, "q2", "Sawa, proceed");
+        assert "ORD-" in ok["messages"][-1]["content"];
+        orders = [o for o in call(client, "list_order_records", {}) if o["channel"] == "shop_chat"];
+        assert len(orders) == 1 and orders[0]["status"] == "PENDING_APPROVAL" and orders[0]["total_kes"] == 14000;
+        say(client, token, "q3", "proceed");
+        assert len([o for o in call(client, "list_order_records", {}) if o["channel"] == "shop_chat"]) == 1;
     } finally { client.close(); }
 }

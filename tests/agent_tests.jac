@@ -36,9 +36,7 @@ def say(biz: Business, customer_id: str, text: str, cmid: str, image: str = "") 
     }
     conv = get_or_create_conversation(biz, customer_id);
     result = conv spawn CustomerAgent(customer_id=customer_id, message_seq=m.seq);
-    out = result.reports[0];
-    record_outbound(biz, customer_id, out.reply);
-    return out;
+    return result.reports[0];
 }
 
 def mock_mode() {

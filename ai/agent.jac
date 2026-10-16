@@ -17,7 +17,7 @@ import from domain.models {
 }
 import from domain.errors { DomainError }
 import from domain.catalogue { find_product }
-import from domain.messaging { get_or_create_conversation, list_messages }
+import from domain.messaging { get_or_create_conversation, list_messages, record_outbound }
 import from domain.quotations {
     RequestedLine, QuotePlan, plan_quote, build_quotation, latest_quotation, quotation_lines,
     confirm_quotation, cancel_open_quotation, is_expired
@@ -163,6 +163,7 @@ def respond(biz: Business, customer_id: str, message_seq: int) -> AgentOutcome {
         steps=state.trace[:25], error=error
     );
     conv +>:HasExecution():+> ex;
+    record_outbound(biz, customer_id, outcome.reply);
     return outcome;
 }
 
