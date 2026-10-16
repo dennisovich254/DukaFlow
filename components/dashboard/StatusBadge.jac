@@ -24,6 +24,11 @@ glob STATUS_CLASSES: dict[str, str] = {
     "EXPIRED": "bg-[#f3f5ee] text-[#585c52]"
 };
 
+"""Human label for an order status."""
+def:pub status_label(status: str) -> str {
+    return STATUS_LABELS.get(status, status);
+}
+
 """Order status as text plus colour (never colour alone)."""
 def:pub StatusBadge(status: str) -> JsxElement {
     <Badge variant="outline" className={"rounded-full border-transparent " + STATUS_CLASSES.get(status, "bg-[#f3f5ee] text-[#0e0f0c]")}>

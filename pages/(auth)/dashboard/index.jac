@@ -9,7 +9,7 @@ import from ....api.dashboard { dashboard_analytics, load_demo_data }
 import from ....api.contracts { AnalyticsView }
 import from ....lib.money { format_kes }
 import from ....components.dashboard.Shell { DashboardShell, PageHeader }
-import from ....components.dashboard.StatusBadge { StatusBadge, STATUS_LABELS }
+import from ....components.dashboard.StatusBadge { StatusBadge, status_label }
 import from ....components.dashboard.charts { BarChart, HBarList, Donut }
 import from ....components.ui.button { Button }
 import from ....components.ui.card { Card, CardHeader, CardTitle, CardDescription, CardContent }
@@ -157,7 +157,7 @@ def:pub OverviewPage() -> JsxPage {
                             <CardDescription>All orders, all time.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Donut names={[STATUS_LABELS.get(s.status, s.status) for s in a.status_counts]}
+                            <Donut names={[status_label(s.status) for s in a.status_counts]}
                                 values={[s.count for s in a.status_counts]} centre="orders" />
                         </CardContent>
                     </Card>
