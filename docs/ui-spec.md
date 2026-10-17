@@ -53,9 +53,10 @@ Implementation: `components/landing/Landing.jac`, mounted by `pages/index.jac`.
 
 ## Dashboard (P1–P2)
 
-- Shell: `components/dashboard/Shell.jac`: off-white sidebar (`#f8f9f4`) with asterisk logo and "DukaFlow / Wholesale dashboard"; active nav item soft lime with semibold text; white top bar with hairline; canvas `#fbfcf8`; page titles `.display` 30/36 px. Sidebar: Overview, Orders, Customers, Products & stock; Sign out.
-- Overview: the "Pending approval" stat card is the one `.ink-card` (it is the number that needs action).
-- Overview cards: Orders today, Pending approval, Low or out of stock (available ≤ 5), Customers; recent orders table (5). "Load demo data" button when the catalogue is empty.
+- Shell: `components/dashboard/Shell.jac`: off-white sidebar (`#f8f9f4`) with asterisk logo and "DukaFlow / Wholesale dashboard"; active nav item soft lime with semibold text; white top bar with hairline; canvas `#fbfcf8`; page titles `.display` 30/36 px. Sidebar: Overview, Orders, Customers, Products & stock, Agent activity; Sign out.
+- Overview: an ink "Needs your approval" hero (count plus the three oldest waiting orders, Review orders) or a lime "All caught up" strip.
+- Overview: four KPI tiles (sales and orders over 7 days with week-over-week change and average, customers, low stock ≤ 5); "Sales this week" bar chart (focusable columns with a readout); orders-by-status and order-channel donuts; top products (30 days); "Running low" list; recent orders as a list (avatar, customer, order id, date, channel, items, amount, status). Charts are plain HTML/CSS, no library. "Load demo data" when the catalogue is empty.
+- Orders: a summary line (needing approval, value in progress, total), status tabs with counts (All, Needs approval, In progress, Delivered, Closed; "Needs approval" is preselected when something is waiting) and a search box (customer or order ID). Each order is one row: avatar, customer, channel icon, order ID, date ("Today, 14:02"), first two items, amount, status badge and one primary action (Approve, Dispatch…) or View. Reject and Cancel live in the Review dialog (click a row). No table, so nothing overflows on narrow screens.
 - Orders table: per-status action buttons (Draft: Submit/Cancel · Pending approval: Approve/Reject · Approved/Packed: Dispatch/Cancel · Dispatched: Mark delivered). Primary variant for Submit/Approve/Dispatch.
 - Status badge: text label plus colour (`StatusBadge`).
 - Money displays as `KSh 14,000`.
@@ -94,4 +95,4 @@ Each customer row gets two small pill buttons: **Chat link** (creates a fresh in
 - **Orders table**: each row has a **Review** ghost button before its status actions.
 - **Review dialog** (`max-w-3xl`, scrolls): two columns on `md`+, stacked on phones. Left, "What the customer sent": the last 8 chat messages up to the confirmation (customer bubbles ink, agent bubbles muted) with photos as thumbnails that enlarge on tap. Right: "Order lines" (quantity × product, line total, bold total), an amber note per shortage or substitution, "How the agent read it" (one card per run: input type, outcome, duration, then each tool step in small monospace), and the status badge with the same action buttons as the table.
 - **Hand-entered orders** show "Entered by hand: no chat messages."
-- **Overview "Agent activity" card**: the 10 newest agent runs, each with customer name, input type (text or photo), an outcome pill (lime), the arrow-joined list of tools called (or "answered directly, no tools needed") and the duration; refreshes every 5 seconds.
+- **Agent activity page** (`/dashboard/agent`): a read-only inbox of the real chats. Left: one row per customer (avatar, name, last message, time); right: the selected customer's conversation as bubbles (customer right in ink, agent left in white, photos as thumbnails). Refreshes every 5 seconds; the first customer is selected by default.

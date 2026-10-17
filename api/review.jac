@@ -37,5 +37,5 @@ def:protect order_review(query: OrderLookup) -> ReviewResult {
 }
 
 def:protect recent_agent_activity() -> list[ExecutionView] {
-    return [execution_view(i.customer_id, i.customer_name, i.execution) for i in recent_activity(current_business(), 10)];
+    return [execution_view(i.customer_id, i.customer_name, i.execution) for i in recent_activity(current_business(), 50)];
 }

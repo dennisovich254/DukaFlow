@@ -15,8 +15,8 @@ test "seed loads catalogue, stock, customers and delivered history without touch
     rina = inventory_of(get_product(biz, "RINA-1L-CTN"));
     assert (rina.quantity_on_hand, rina.quantity_reserved) == (8, 0);
     orders = list_orders(biz);
-    assert len(orders) == 7 and all([o.status == "DELIVERED" for o in orders]);
+    assert len(orders) == 17 and all([o.status == "DELIVERED" for o in orders]);
     mama = [o for o in orders if o.customer_id == "C-001"];
-    assert len(mama) == 3 and all([o.total_kes == 28500 for o in mama]);
-    assert seed_demo_data(biz) == 0 and len(list_products(biz)) == 39 and len(list_orders(biz)) == 7;
+    assert len(mama) == 5 and all([o.total_kes == 28500 for o in mama]);
+    assert seed_demo_data(biz) == 0 and len(list_products(biz)) == 39 and len(list_orders(biz)) == 17;
 }

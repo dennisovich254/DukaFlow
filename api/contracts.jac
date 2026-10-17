@@ -246,3 +246,60 @@ obj ReviewResult {
         review: ReviewView | None = None,
         error: ApiError | None = None;
 }
+
+obj DayPointView {
+    has date: str,
+        label: str,
+        revenue_kes: int,
+        orders: int;
+}
+
+obj StatusCountView {
+    has status: str,
+        count: int;
+}
+
+obj TopProductView {
+    has sku: str,
+        name: str,
+        quantity: int,
+        revenue_kes: int;
+}
+
+obj ChannelCountView {
+    has channel: str,
+        count: int;
+}
+
+obj LowStockView {
+    has sku: str,
+        name: str,
+        available: int;
+}
+
+obj PendingView {
+    has order_id: str,
+        customer_name: str,
+        total_kes: int,
+        created_at: str;
+}
+
+"""Everything the Overview draws: series for the charts plus the headline numbers."""
+obj AnalyticsView {
+    has days: list[DayPointView],
+        revenue_7d: int,
+        revenue_prev_7d: int,
+        orders_7d: int,
+        avg_order_kes: int,
+        status_counts: list[StatusCountView],
+        top_products: list[TopProductView],
+        channels: list[ChannelCountView],
+        low_stock: list[LowStockView],
+        pending_count: int,
+        pending: list[PendingView],
+        recent_orders: list[OrderView],
+        customer_count: int,
+        product_count: int,
+        today: str,
+        ai_mode: str = "live";
+}

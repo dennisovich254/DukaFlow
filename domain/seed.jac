@@ -517,23 +517,36 @@ glob SEED_CUSTOMERS: list[list[str]] = [
     ["Baraka Minimart", "+254733000003"]
 ];
 
-# customer id, ordered lines [sku, quantity], created_at of each past order
-glob SEED_HISTORY: list[list[any]] = [
-    ["C-001", [["RINA-1L-CTN", 5], ["JOGOO-2KG-BALE", 10]], ["2026-10-02T09:15:00+03:00", "2026-10-07T10:02:00+03:00", "2026-10-12T08:40:00+03:00"]],
-    ["C-002", [["OMO-1KG-CTN", 3], ["KABRAS-2KG-BALE", 2]], ["2026-10-05T11:20:00+03:00", "2026-10-11T14:05:00+03:00"]],
-    ["C-003", [["SALT-1KG-BALE", 4], ["RICE-PISHORI-BAG", 2]], ["2026-10-06T12:30:00+03:00", "2026-10-13T09:50:00+03:00"]]
+# [created_at, customer id, [[sku, quantity], ...]] in date order; all are written as DELIVERED
+# and never touch stock. Each customer's newest order is their usual (the agent's memory).
+glob SEED_ORDERS: list[list[any]] = [
+    ["2026-10-02T09:15:00+03:00", "C-001", [["RINA-1L-CTN", 5], ["JOGOO-2KG-BALE", 10]]],
+    ["2026-10-05T11:20:00+03:00", "C-002", [["OMO-1KG-CTN", 3], ["KABRAS-2KG-BALE", 2]]],
+    ["2026-10-06T12:30:00+03:00", "C-003", [["SALT-1KG-BALE", 4], ["RICE-PISHORI-BAG", 2]]],
+    ["2026-10-07T10:02:00+03:00", "C-001", [["RINA-1L-CTN", 5], ["JOGOO-2KG-BALE", 10]]],
+    ["2026-10-11T14:05:00+03:00", "C-002", [["OMO-1KG-CTN", 3], ["KABRAS-2KG-BALE", 2]]],
+    ["2026-10-12T08:40:00+03:00", "C-001", [["RINA-1L-CTN", 5], ["JOGOO-2KG-BALE", 10]]],
+    ["2026-10-13T09:50:00+03:00", "C-003", [["SALT-1KG-BALE", 4], ["RICE-PISHORI-BAG", 2]]],
+    ["2026-10-14T08:45:00+03:00", "C-002", [["OMO-1KG-CTN", 6], ["ROYCO-CUBE-CTN", 2]]],
+    ["2026-10-14T10:30:00+03:00", "C-003", [["SALT-1KG-BALE", 8], ["SUNLIGHT-1KG-CTN", 2]]],
+    ["2026-10-14T15:05:00+03:00", "C-001", [["RINA-1L-CTN", 5], ["JOGOO-2KG-BALE", 10]]],
+    ["2026-10-15T09:20:00+03:00", "C-002", [["KABRAS-2KG-BALE", 6], ["MUMIAS-2KG-BALE", 4]]],
+    ["2026-10-15T11:40:00+03:00", "C-003", [["INDOMIE-CHICKEN-CTN", 3], ["SPAGHETTI-400-CTN", 2]]],
+    ["2026-10-15T14:10:00+03:00", "C-002", [["AJAB-2KG-BALE", 5], ["EXE-2KG-BALE", 3]]],
+    ["2026-10-15T16:25:00+03:00", "C-003", [["OMO-500G-CTN", 4], ["TEA-KETEPA-CTN", 1]]],
+    ["2026-10-16T08:15:00+03:00", "C-002", [["BLUEBAND-500-CTN", 3], ["ROYCO-MIX-CTN", 2]]],
+    ["2026-10-16T09:50:00+03:00", "C-001", [["RINA-1L-CTN", 5], ["JOGOO-2KG-BALE", 10]]],
+    ["2026-10-16T12:05:00+03:00", "C-003", [["COLGATE-100-DOZ", 2], ["VASELINE-250-DOZ", 1]]]
 ];
 
 """Past orders are written as DELIVERED directly and never touch stock."""
 def seed_history(biz: Business) {
-    for h in SEED_HISTORY {
-        for created in h[2] {
-            order = create_manual_order(
-                biz, h[0], [OrderItemInput(sku=ln[0], quantity=ln[1]) for ln in h[1]]
-            );
-            order.status = "DELIVERED";
-            order.created_at = created;
-        }
+    for h in SEED_ORDERS {
+        order = create_manual_order(
+            biz, h[1], [OrderItemInput(sku=ln[0], quantity=ln[1]) for ln in h[2]]
+        );
+        order.status = "DELIVERED";
+        order.created_at = h[0];
     }
 }
 

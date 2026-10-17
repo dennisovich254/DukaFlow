@@ -1,8 +1,11 @@
 import from "sonner" { toast }
+import from "@hugeicons/react" { HugeiconsIcon }
+import from "@hugeicons/core-free-icons" { Message01Icon, PencilEdit01Icon, Search01Icon }
 import from ....api.products { list_catalogue }
 import from ....api.customers { list_customer_records }
 import from ....api.orders { list_order_records, create_order, act_on_order }
 import from ....api.review { order_review }
+import from ....api.dashboard { dashboard_analytics }
 import from ....api.contracts {
     ProductView, CustomerView, OrderView, OrderResult, CatalogueQuery, NewOrderInput, OrderActionInput,
     ReviewView, ReviewResult, OrderLookup
@@ -17,7 +20,6 @@ import from ....components.ui.input { Input }
 import from ....components.ui.field { Field, FieldLabel, FieldGroup }
 import from ....components.ui.native_select { NativeSelect, NativeSelectOption }
 import from ....components.ui.card { Card, CardContent }
-import from ....components.ui.table { Table, TableHeader, TableBody, TableRow, TableHead, TableCell }
 import from ....components.ui.dialog {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 }
@@ -31,6 +33,37 @@ glob ORDER_ACTIONS: dict[str, list[list[str]]] = {
     "PACKED": [["dispatch", "Dispatch"], ["cancel", "Cancel"]],
     "DISPATCHED": [["deliver", "Mark delivered"]]
 };
+
+"""Status tabs: [key, label, statuses]. An empty list means every status."""
+glob TABS: list[list[any]] = [
+    ["all", "All", []],
+    ["approval", "Needs approval", ["PENDING_APPROVAL"]],
+    ["progress", "In progress", ["DRAFT", "QUOTED", "APPROVED", "PACKED", "DISPATCHED"]],
+    ["delivered", "Delivered", ["DELIVERED"]],
+    ["closed", "Closed", ["REJECTED", "CANCELLED", "EXPIRED"]]
+];
+
+glob MONTHS: list[str] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+"""'2026-10-16T14:02:11+03:00' -> 'Today, 14:02' or '16 Oct, 14:02'."""
+def when(iso: str, today: str) -> str {
+    if len(iso) < 16 { return iso; }
+    if iso[:10] == today { return "Today, " + iso[11:16]; }
+    return str(int(iso[8:10])) + " " + MONTHS[int(iso[5:7]) - 1] + ", " + iso[11:16];
+}
+
+def initials(name: str) -> str {
+    parts = [p for p in name.split(" ") if len(p) > 0];
+    if len(parts) == 0 { return "?"; }
+    return (parts[0][0] + (parts[1][0] if len(parts) > 1 else "")).upper();
+}
+
+"""First two lines of an order as text, then '+ N more'."""
+def items_text(o: OrderView) -> str {
+    first = [f"{l.quantity} {l.unit} {l.product_name}" for l in o.lines[:2]];
+    more = len(o.lines) - 2;
+    return ", ".join(first) + (f" + {more} more" if more > 0 else "");
+}
 
 """A draft order line in the form (strings until submitted)."""
 obj DraftLine {
@@ -50,16 +83,24 @@ def:pub OrdersPage() -> JsxPage {
     has lines: list[DraftLine] = [];
     has review: ReviewView | None = None;
     has reviewingId: str = "";
+    has tab: str = "";
+    has query: str = "";
+    has today: str = "";
 
     async def refresh {
         orders = await list_order_records();
         loading = False;
+        if tab == "" {
+            tab = "approval" if len([o for o in orders if o.status == "PENDING_APPROVAL"]) > 0 else "all";
+        }
     }
 
     async can with entry {
         products = await list_catalogue(CatalogueQuery(include_inactive=False));
         customers = await list_customer_records();
         await refresh();
+        stats = await dashboard_analytics();
+        today = stats.today;
     }
 
     async def run_action(order_id: str, action: str) {
@@ -139,58 +180,86 @@ def:pub OrdersPage() -> JsxPage {
 
     preview_total = sum([price_of(l.sku) * int(float(l.quantity or "0")) for l in lines]);
     can_create = len(products) > 0 and len(customers) > 0;
+    waiting = [o for o in orders if o.status == "PENDING_APPROVAL"];
+    in_progress_value = sum([o.total_kes for o in orders if o.status in ["APPROVED", "PACKED", "DISPATCHED"]]);
+    needle = query.strip().lower();
+    active_statuses = [t[2] for t in TABS if t[0] == tab];
+    shown = [
+        o for o in orders
+        if (len(active_statuses) == 0 or len(active_statuses[0]) == 0 or o.status in active_statuses[0])
+        and (needle == "" or needle in o.customer_name.lower() or needle in o.order_id.lower())
+    ];
+
+    def tab_count(statuses: list[str]) -> int {
+        return len(orders) if len(statuses) == 0 else len([o for o in orders if o.status in statuses]);
+    }
 
     <DashboardShell>
-        <PageHeader title="Orders" description="Orders from all channels. Manual orders start as drafts.">
+        <PageHeader title="Orders" description="Review, approve and track every order. Click an order to see the customer's chat and the quoted lines.">
             <Button onClick={open_new} disabled={not can_create}>New manual order</Button>
         </PageHeader>
         {if not loading and not can_create {
             <p className="text-sm text-muted-foreground">Add at least one product and one customer before creating orders.</p>
         }}
+        {if not loading and len(orders) > 0 {
+            <p className="text-sm text-muted-foreground">
+                {len(waiting)} {"order needs" if len(waiting) == 1 else "orders need"} approval · {format_kes(in_progress_value)} in progress · {len(orders)} in total
+            </p>
+        }}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter orders by status">
+                {for t in TABS {
+                    <button key={t[0]} type="button" role="tab" aria-selected={tab == t[0]} onClick={lambda (e: any) { tab = t[0]; }}
+                        className={"cursor-pointer rounded-full border pt-1.5 pb-1.5 pl-3.5 pr-3.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#0e0f0c] " + ("border-[#0e0f0c] bg-[#0e0f0c] text-white" if tab == t[0] else "border-[#e4e7dc] bg-white hover:bg-[#f3f5ee]")}>
+                        {t[1]} <span className={"tabular-nums " + ("text-[#d9f99d]" if tab == t[0] else "text-muted-foreground")}>{tab_count(t[2])}</span>
+                    </button>
+                }}
+            </div>
+            <div className="relative w-full sm:w-64">
+                <HugeiconsIcon icon={Search01Icon} strokeWidth={2} className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input aria-label="Search orders" placeholder="Search customer or order ID" value={query}
+                    onChange={lambda (e: ChangeEvent) { query = e.target.value; }} className="rounded-full pl-9" />
+            </div>
+        </div>
         <Card>
             <CardContent>
                 {if loading {
                     <p className="text-sm text-muted-foreground">Loading orders…</p>
                 } elif len(orders) == 0 {
                     <p className="text-sm text-muted-foreground">No orders yet.</p>
+                } elif len(shown) == 0 {
+                    <p className="text-sm text-muted-foreground">No orders match.</p>
                 } else {
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Order</TableHead>
-                                <TableHead>Customer</TableHead>
-                                <TableHead>Items</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Channel</TableHead>
-                                <TableHead>Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {for o in orders {
-                                <TableRow key={o.order_id}>
-                                    <TableCell className="font-medium">{o.order_id}</TableCell>
-                                    <TableCell>{o.customer_name}</TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                        {", ".join([f"{l.quantity} {l.unit} {l.product_name}" for l in o.lines])}
-                                    </TableCell>
-                                    <TableCell className="text-right tabular-nums">{format_kes(o.total_kes)}</TableCell>
-                                    <TableCell><StatusBadge status={o.status} /></TableCell>
-                                    <TableCell className="capitalize">{o.channel}</TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-2">
-                                            <Button size="sm" variant="ghost" onClick={lambda { open_review(o.order_id); }}>Review</Button>
-                                            {for a in ORDER_ACTIONS.get(o.status, []) {
-                                                <Button key={a[0]} size="sm"
-                                                    variant={"default" if a[0] in ["approve", "submit", "dispatch"] else "outline"}
-                                                    onClick={lambda { run_action(o.order_id, a[0]); }}>{a[1]}</Button>
-                                            }}
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            }}
-                        </TableBody>
-                    </Table>
+                    <ul className="divide-y">
+                        {for o in shown {
+                            <li key={o.order_id} className="flex flex-wrap items-center gap-3 pt-3 pb-3">
+                                <button type="button" onClick={lambda (e: any) { open_review(o.order_id); }}
+                                    className="flex min-w-0 flex-1 basis-64 cursor-pointer items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-[#0e0f0c]">
+                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#d9f99d] text-sm font-semibold text-[#1a2e05]" aria-hidden="true">{initials(o.customer_name)}</span>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block truncate font-medium">{o.customer_name}</span>
+                                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                            <span title={"Chat order" if o.channel == "chat" else "Entered by you"} aria-label={"Chat order" if o.channel == "chat" else "Entered by you"}>
+                                                <HugeiconsIcon icon={Message01Icon if o.channel == "chat" else PencilEdit01Icon} strokeWidth={2} className="size-3.5" />
+                                            </span>
+                                            {o.order_id} · {when(o.created_at, today)}
+                                        </span>
+                                        <span className="block truncate text-xs text-muted-foreground">{items_text(o)}</span>
+                                    </span>
+                                </button>
+                                <span className="tabular-nums font-medium">{format_kes(o.total_kes)}</span>
+                                <StatusBadge status={o.status} />
+                                <span className="flex w-28 justify-end">
+                                    {if len(ORDER_ACTIONS.get(o.status, [])) > 0 {
+                                        <Button size="sm" variant={"default" if ORDER_ACTIONS[o.status][0][0] in ["approve", "submit", "dispatch"] else "outline"}
+                                            onClick={lambda (e: any) { run_action(o.order_id, ORDER_ACTIONS[o.status][0][0]); }}>{ORDER_ACTIONS[o.status][0][1]}</Button>
+                                    } else {
+                                        <Button size="sm" variant="ghost" onClick={lambda (e: any) { open_review(o.order_id); }}>View</Button>
+                                    }}
+                                </span>
+                            </li>
+                        }}
+                    </ul>
                 }}
             </CardContent>
         </Card>
