@@ -7,7 +7,7 @@ import from domain.catalogue { find_product }
 import from domain.audit { list_audit_events }
 import from domain.messaging { get_or_create_conversation, list_messages }
 import from domain.compliance { list_notices, list_alerts, find_alert, alert_actions, find_notice, matching_products }
-import from integrations.regwatch { allowed_url, host_allowed, load_snapshot, pasted_doc, strip_html }
+import from integrations.regwatch { allowed_url, host_allowed, load_snapshot, pasted_doc, strip_html, parse_kra_list, kra_body, relevant_title }
 import from ai.regulation { RegExtract, ClaimCheck, rate_found, date_found, check_extract, rule_verify, pick_evidence }
 import from ai.actions { rate_number, pass_through_price, apply_prices, send_messages, pause_products, set_action_status }
 import from ai.radar { refresh_radar, analyse_pasted }
@@ -187,4 +187,19 @@ test "evidence is chosen by code from the source" {
     ex = RegExtract(claims=["Imported sugar excise is KSh 40 per kg."], keywords=["sugar"], rate_after="KSh 40 per kg");
     ev = pick_evidence("The Act took effect on 1 July 2026. The excise duty on imported sugar is now KSh 40 per kg. Bread is unchanged here today.", ex);
     assert "KSh 40 per kg" in ev;
+}
+
+glob KRA_LIST_HTML: str = '<ul><li><a href="/news-center/public-notices/2401-full-roll-out-of-electronic-monitoring"><span>PUBLIC NOTICES</span> 16/10/2026 Notification of the Full Roll-Out of Electronic Cargo Tracking</a></li><li><a href="/news-center/public-notices/2376-removal-of-excise-duty-on-bottled-water">PUBLIC NOTICES 06/07/2026 Removal of Excise Duty on Bottled Water</a></li><li><a href="/news-center/public-notices/2376-removal-of-excise-duty-on-bottled-water">duplicate 06/07/2026 Removal</a></li><li><a href="/about">About KRA</a></li></ul>';
+
+test "the KRA public-notices page is parsed into dated, absolute links" {
+    links = parse_kra_list(KRA_LIST_HTML);
+    assert [l.notice_number for l in links] == ["2401", "2376"];
+    assert links[1].url == "https://www.kra.go.ke/news-center/public-notices/2376-removal-of-excise-duty-on-bottled-water";
+    assert links[1].title == "Removal of Excise Duty on Bottled Water" and links[1].published_on == "2026-07-06";
+    assert relevant_title(links[1].title) and not relevant_title("Renewal of Customs Agents Licences");
+}
+
+test "a KRA notice body is the text after the share links, without the footer" {
+    page = "<nav>Home PIN Registration</nav><h6>share article</h6><p>KRA informs importers that excise duty on bottled water is removed from 1st July 2026.</p><div>Quick Links Contact</div>";
+    assert kra_body(page) == "KRA informs importers that excise duty on bottled water is removed from 1st July 2026.";
 }
