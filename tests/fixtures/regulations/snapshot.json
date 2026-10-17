@@ -1,0 +1,214 @@
+[
+  {
+    "notice_id": "REG-01",
+    "title": "Finance Act 2026: excise duty on imported sugar raised to KSh 40 per kg",
+    "source_name": "Citizen Digital (news report of the Finance Act 2026)",
+    "url": "https://citizen.digital/article/finance-act-2026-takes-effect-with-higher-sugar-tax-pre-filled-kra-returns-n385682",
+    "published_on": "2026-07-01",
+    "status": "IN_FORCE",
+    "effective_on": "2026-07-01",
+    "kind": "TAX_RATE",
+    "rate_before": "UNKNOWN",
+    "rate_after": "KSh 40 per kg",
+    "categories": [
+      "Sugar"
+    ],
+    "keywords": [
+      "sugar"
+    ],
+    "source_text": "The Finance Act 2026 took effect on 1 July 2026. The excise duty on imported sugar is now KSh 40 per kg. One report gives the previous rate as KSh 7.50 per kg and another as KSh 5 per kg, so the previous rate is not confirmed.",
+    "note": "Sources disagree on the previous rate; old rate left UNKNOWN on purpose. Applies to IMPORTED sugar."
+  },
+  {
+    "notice_id": "REG-02",
+    "title": "Excise duty on bottled water removed from 1 July 2026",
+    "source_name": "KRA statement reported by Eastleigh Voice",
+    "url": "https://eastleighvoice.co.ke/business/376023/kra-removes-excise-duty-on-bottled-water-effective-july-1",
+    "published_on": "2026-06-30",
+    "status": "IN_FORCE",
+    "effective_on": "2026-07-01",
+    "kind": "TAX_RATE",
+    "rate_before": "UNKNOWN",
+    "rate_after": "nil",
+    "categories": [
+      "Water"
+    ],
+    "keywords": [
+      "bottled water"
+    ],
+    "source_text": "From 1st July 2026, bottled water manufactured or imported in Kenya will no longer be subject to excise duty and will not require excise stamps, following amendments to the First Schedule of the Excise Duty Act through the Finance Act 2026.",
+    "note": "No water product in the demo catalogue, so this should come out as INFO."
+  },
+  {
+    "notice_id": "REG-03",
+    "title": "Sugar Development Levy: KRA collects 4% on local and imported sugar",
+    "source_name": "Kenya Revenue Authority public notice",
+    "url": "https://www.kra.go.ke/news-center/public-notices/2242-collection-of-sugar-development-levy-by-kenya-revenue-authority",
+    "published_on": "2025-07-31",
+    "status": "IN_FORCE",
+    "effective_on": "2025-07-01",
+    "kind": "LEVY",
+    "rate_before": "UNKNOWN",
+    "rate_after": "4%",
+    "categories": [
+      "Sugar"
+    ],
+    "keywords": [
+      "sugar"
+    ],
+    "source_text": "The Cabinet Secretary for Agriculture has appointed the Kenya Revenue Authority as collector of the Sugar Development Levy under Legal Notice 113 of 2025. The levy is 4% of the ex-factory price for domestic sugar and 4% of the CIF value for imported sugar, effective 1 July 2025.",
+    "note": "Paid by millers and importers; a wholesaler feels it through supplier prices."
+  },
+  {
+    "notice_id": "REG-04",
+    "title": "Finance Act 2025: locally consumed tea moves from 16% VAT to exempt",
+    "source_name": "EY Tax News: Kenya enacts Finance Act 2025",
+    "url": "https://taxnews.ey.com/news/2025-1498-kenya-enacts-finance-act-2025",
+    "published_on": "2025-07-16",
+    "status": "IN_FORCE",
+    "effective_on": "2025-07-01",
+    "kind": "TAX_RATE",
+    "rate_before": "16%",
+    "rate_after": "exempt",
+    "categories": [
+      "Tea"
+    ],
+    "keywords": [
+      "tea"
+    ],
+    "source_text": "Locally consumed teas move from VAT at 16% to exempt, effective 1 July 2025. Exempt suppliers cannot claim input tax and need to consider VAT deregistration.",
+    "note": "Exempt (not zero-rated): input VAT on purchases cannot be recovered, so the change is not simply a price cut."
+  },
+  {
+    "notice_id": "REG-05",
+    "title": "Finance Act 2025: excise duty of 25% on imported tea",
+    "source_name": "EY Tax News: Kenya enacts Finance Act 2025",
+    "url": "https://taxnews.ey.com/news/2025-1498-kenya-enacts-finance-act-2025",
+    "published_on": "2025-07-16",
+    "status": "IN_FORCE",
+    "effective_on": "2025-07-01",
+    "kind": "TAX_RATE",
+    "rate_before": "nil",
+    "rate_after": "25% of excisable value",
+    "categories": [
+      "Tea"
+    ],
+    "keywords": [
+      "imported tea"
+    ],
+    "source_text": "Imported tea, whether or not flavoured, attracts excise duty of 25% of the excisable value. The previous rate was nil. Effective 1 July 2025.",
+    "note": "Applies to IMPORTED tea only; Ketepa and Tusker in the demo catalogue are Kenyan brands."
+  },
+  {
+    "notice_id": "REG-06",
+    "title": "Finance Act 2025: excise duty on imported cosmetics and beauty products removed (15% to nil)",
+    "source_name": "EY Tax News: Kenya enacts Finance Act 2025",
+    "url": "https://taxnews.ey.com/news/2025-1498-kenya-enacts-finance-act-2025",
+    "published_on": "2025-07-16",
+    "status": "IN_FORCE",
+    "effective_on": "2025-07-01",
+    "kind": "TAX_RATE",
+    "rate_before": "15%",
+    "rate_after": "nil",
+    "categories": [
+      "Toiletries"
+    ],
+    "keywords": [
+      "cosmetics",
+      "beauty products"
+    ],
+    "source_text": "Excise duty on imported cosmetics and beauty products (tariff headings 3303 to 3307) is reduced from 15% to nil, effective 1 July 2025.",
+    "note": "Tariff headings 3303-3307 only; matching by category is approximate."
+  },
+  {
+    "notice_id": "REG-07",
+    "title": "Finance Act 2025: higher excise on imported cartons, boxes and glass bottles",
+    "source_name": "EY Tax News: Kenya enacts Finance Act 2025",
+    "url": "https://taxnews.ey.com/news/2025-1498-kenya-enacts-finance-act-2025",
+    "published_on": "2025-07-16",
+    "status": "IN_FORCE",
+    "effective_on": "2025-07-01",
+    "kind": "TAX_RATE",
+    "rate_before": "25%",
+    "rate_after": "25% or KSh 200 per kg, whichever is higher",
+    "categories": [
+      "Packaging"
+    ],
+    "keywords": [
+      "cartons",
+      "glass bottles",
+      "packaging"
+    ],
+    "source_text": "Imported corrugated cartons and boxes now attract excise of 25% or KSh 200 per kg, whichever is higher (previously 25%). Imported glass bottles attract 35% or KSh 40 per kg, whichever is higher. Effective 1 July 2025.",
+    "note": "Packaging materials, not goods the demo business sells: should come out as INFO."
+  },
+  {
+    "notice_id": "REG-08",
+    "title": "KRA to validate declared expenses against eTIMS invoices from 1 January 2026",
+    "source_name": "EY Tax News: KRA to validate income and expenses",
+    "url": "https://taxnews.ey.com/news/2025-2471-kenya-revenue-authority-to-validate-income-and-expenses-in-income-tax-returns",
+    "published_on": "2025-11-10",
+    "status": "IN_FORCE",
+    "effective_on": "2026-01-01",
+    "kind": "OTHER",
+    "rate_before": "UNKNOWN",
+    "rate_after": "UNKNOWN",
+    "categories": [
+      "ALL"
+    ],
+    "keywords": [
+      "etims",
+      "invoice"
+    ],
+    "source_text": "From 1 January 2026 KRA validates the income and expenses declared in income tax returns against eTIMS invoices, withholding tax data and customs records. Expenses are allowable only when the supplier's eTIMS invoice carries the buyer's PIN. One-off concession for 2025 returns (deadline 30 June 2026); from the 2026 income year eTIMS or TIMS invoices are required.",
+    "note": "Applies to every business. Another source dates the notice 7 November 2025."
+  },
+  {
+    "notice_id": "REG-09",
+    "title": "Plastic packaging regulations (Legal Notice 181 of 2024): licences and producer responsibility plans",
+    "source_name": "Kenya Law (Legal Notice 181 of 2024), as summarised by Cliffe Dekker Hofmeyr",
+    "url": "https://www.cliffedekkerhofmeyr.com/news/publications/2025/Practice/Environmental-Law/environmental-law-alert-23-january-in-pursuit-of-a-circular-economy-kenya-enacts-extended-producer-responsibility-regulations",
+    "published_on": "2025-01-23",
+    "status": "IN_FORCE",
+    "effective_on": "UNKNOWN",
+    "kind": "PACKAGING",
+    "rate_before": "UNKNOWN",
+    "rate_after": "KSh 5,000 one-off NEMA registration fee",
+    "categories": [
+      "Packaging"
+    ],
+    "keywords": [
+      "plastic packaging"
+    ],
+    "source_text": "Each manufacturer, importer or user of plastic packaging materials must develop an extended producer responsibility plan and submit it to the authority for approval. Producers must register with NEMA and pay a one-off registration fee of KSh 5,000. Non-compliance can lead to penalties under existing environmental law.",
+    "note": "Aimed at manufacturers, importers and users of plastic packaging; a pure reseller may be out of scope. Kenya Law page itself returned 403 to automated fetch."
+  },
+  {
+    "notice_id": "REG-10",
+    "title": "KEBS draft DKS 2571:2026: fortification premixes for salt, flours, edible oils and rice",
+    "source_name": "Freyr Solutions (summary of KEBS draft standard)",
+    "url": "https://www.freyrsolutions.com/consumer-industry-news/kenya-proposes-updated-requirements-for-food-fortification-premixes-and-fortificants",
+    "published_on": "2026-03-01",
+    "status": "PROPOSED",
+    "effective_on": "UNKNOWN",
+    "kind": "STANDARD",
+    "rate_before": "UNKNOWN",
+    "rate_after": "UNKNOWN",
+    "categories": [
+      "Salt",
+      "Flour",
+      "Cooking oil",
+      "Rice"
+    ],
+    "keywords": [
+      "fortification",
+      "edible oils",
+      "wheat flour",
+      "maize flour",
+      "salt",
+      "rice"
+    ],
+    "source_text": "KEBS has published draft DKS 2571:2026 on food fortification premixes and fortificants. It proposes updated requirements for registration, manufacture, importation, distribution, packaging, labelling and quality control. The scope covers salt, wheat flour, maize flour, edible fats and oils, and fortified rice. It is a draft: no commencement date.",
+    "note": "Draft only, not law. Publication date approximate (month known). Official KEBS notice not found."
+  }
+]
