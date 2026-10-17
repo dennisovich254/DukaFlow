@@ -7,6 +7,7 @@ import from api.orders { list_order_records, get_order_record, create_order, act
 import from api.dashboard { dashboard_summary, dashboard_analytics, load_demo_data }
 import from api.chat { send_chat_message, get_conversation, get_chat_image, get_chat_session }
 import from api.review { order_review, recent_agent_activity }
+import from api.compliance { radar_overview, radar_check_now, radar_analyse, radar_act, radar_dismiss }
 
 import from .components.ui.sonner { Toaster }
 import ".styles.global.css";

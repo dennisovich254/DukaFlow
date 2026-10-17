@@ -174,3 +174,58 @@ node AgentExecution(SharedNode) {
 edge HasQuotation(SharedEdge): Conversation --> Quotation {}
 edge QuoteContains(SharedEdge): Quotation --> QuotationLine {}
 edge HasExecution(SharedEdge): Conversation --> AgentExecution {}
+
+"""A tax, levy or standards notice the radar has read: shared facts, one per source item."""
+node RegNotice(SharedNode) {
+    has notice_id: str,
+        title: str,
+        source_name: str,
+        url: str,
+        published_on: str,
+        status: str,
+        effective_on: str,
+        kind: str,
+        summary: str,
+        evidence: str,
+        rate_before: str = "UNKNOWN",
+        rate_after: str = "UNKNOWN",
+        applies_to: str = "ALL",
+        categories: list[str] = [],
+        keywords: list[str] = [],
+        confidence: str = "MEDIUM",
+        origin: str = "SNAPSHOT",
+        caveat: str = "",
+        fetched_at: str = "";
+}
+
+"""What a notice means for this business, computed from its own catalogue and sales."""
+node ComplianceAlert(SharedNode) {
+    has alert_id: str,
+        notice_id: str,
+        severity: str,
+        effect_text: str,
+        confidence: str,
+        affected_skus: list[str] = [],
+        sales_30d_kes: int = 0,
+        share_of_sales_pct: int = 0,
+        status: str = "NEW",
+        created_at: str = "";
+}
+
+"""One recommended next step for an alert. Nothing runs until the wholesaler clicks."""
+node AlertAction(SharedNode) {
+    has action_id: str,
+        kind: str,
+        title: str,
+        detail: str,
+        impact_kes: int = 0,
+        due_on: str = "",
+        payload_json: str = "{}",
+        status: str = "SUGGESTED",
+        done_at: str = "";
+}
+
+edge HasNotice(SharedEdge): Business --> RegNotice {}
+edge HasAlert(SharedEdge): Business --> ComplianceAlert {}
+edge AlertFor(SharedEdge): ComplianceAlert --> Product {}
+edge HasAction(SharedEdge): ComplianceAlert --> AlertAction {}

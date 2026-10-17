@@ -41,3 +41,13 @@
 3. **Orders → Review** on the new order: the customer's messages (and photos, if you sent one) are on the left; on the right the lines, the amber shortage note ("only 8 available; added 2 × Fresh Fri…"), and the agent's steps.
 4. Click **Approve** inside the dialog: the status changes and the customer's chat receives the approval message.
 5. Review a hand-entered order: it says "Entered by hand: no chat messages."
+
+## G9: Compliance radar
+
+1. `AI_MODE=mock jac run --dev main.jac`, sign in, **Load demo data**, open **Compliance radar** (first visit loads the snapshot).
+2. **To do** shows alerts with severity pills; the sugar levy alert says it touches 3 products and a share of the last 30 days' sales, and links to the KRA notice.
+3. Open the **Sample** cooking-oil alert: **What to do** lists *Raise 4 prices from 1 Dec 2026*, *Stock up before 1 Dec 2026* and *Tell N customers*.
+4. **Apply prices**: the dialog lists each price; confirm. Products and stock now show the new prices (Rina 1L 2,800 to 3,010) and the alert's step shows Done.
+5. **Review and send**: edit one message, untick another customer, **Send**. Open that customer's chat (Open as customer): the message is there; the unticked customer has none.
+6. **Analyse a notice**: paste a sentence about sugar excise; a new alert appears. Paste unrelated text: it is refused with a clear message.
+7. "No impact" holds notices that touch none of your products (bottled water, imported cartons). "Not relevant to me" moves an alert to Dismissed.
