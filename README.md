@@ -4,7 +4,7 @@ An AI order desk for Kenyan wholesalers. Retailers order by chat, in English, Sw
 
 Built in **Jac 0.37** for JacHacks Kenya 2026 (backend, agent, tests and the React front end are all Jac).
 
-**▶ Demo video:** [youtube.com/watch?v=JZkEvwCbrXI](https://www.youtube.com/watch?v=JZkEvwCbrXI) · **Live preview:** [DukaFlow on Jac Hammer](https://preview-jac-sbx-2bf6dc63c2d54b1b944434e0e53310c3.jachammer.app) · **Pitch deck:** [docs/pitch-deck.pdf](docs/pitch-deck.pdf)
+**▶ Demo video:** [youtube.com/watch?v=JZkEvwCbrXI](https://www.youtube.com/watch?v=JZkEvwCbrXI) · **Live preview:** [DukaFlow on Jac Hammer](https://preview-jac-sbx-cf3f91d02d0d47d7a799534946179618.jachammer.app) · **Pitch deck:** [docs/pitch-deck.pdf](docs/pitch-deck.pdf)
 
 [![DukaFlow demo video](https://img.youtube.com/vi/JZkEvwCbrXI/maxresdefault.jpg)](https://www.youtube.com/watch?v=JZkEvwCbrXI)
 
