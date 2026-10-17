@@ -72,7 +72,11 @@ def:pub CompliancePage() -> JsxPage {
         res = await radar_check_now();
         busy = False;
         if res.ok {
-            toast.success(f"Checked: {res.new_notices} new notices, {res.new_alerts} new alerts");
+            if res.mode == "live" {
+                toast.success(f"Read {res.live_read} live notices from kra.go.ke: {res.new_notices} new notices, {res.new_alerts} new alerts");
+            } else {
+                toast.success(f"Checked: {res.new_notices} new notices, {res.new_alerts} new alerts");
+            }
         } elif res.error is not None {
             toast.error(res.error.message);
         }
@@ -161,7 +165,7 @@ def:pub CompliancePage() -> JsxPage {
     <DashboardShell>
         <PageHeader title="Compliance radar" description="Tax, levy and standards changes, matched to what you sell, with what to do about them.">
             <Button variant="outline" onClick={lambda (e: any) { analyseOpen = True; }}>Analyse a notice</Button>
-            <Button onClick={check_now} disabled={busy}>{"Checking…" if busy else "Check now"}</Button>
+            <Button onClick={check_now} disabled={busy}>{"Reading sources…" if busy else "Check now"}</Button>
         </PageHeader>
 
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="Alert status">
@@ -195,6 +199,7 @@ def:pub CompliancePage() -> JsxPage {
                                 <span className="rounded-full bg-[#f3f5ee] pt-0.5 pb-0.5 pl-2.5 pr-2.5 text-xs">{KIND_LABELS.get(a.kind, a.kind)}</span>
                                 <span className="text-xs text-muted-foreground">{status_text(a, view.today)}</span>
                                 {a.origin == "SAMPLE" and <span className="rounded-full bg-amber-100 pt-0.5 pb-0.5 pl-2.5 pr-2.5 text-xs font-medium text-amber-900">Sample, not a real notice</span>}
+                                {a.origin == "LIVE" and <span className="rounded-full bg-[#0e0f0c] pt-0.5 pb-0.5 pl-2.5 pr-2.5 text-xs font-medium text-[#d9f99d]">Read live from kra.go.ke</span>}
                                 {a.applies_to == "IMPORTED" and <span className="rounded-full bg-[#f3f5ee] pt-0.5 pb-0.5 pl-2.5 pr-2.5 text-xs">Imports only</span>}
                             </div>
                             <CardTitle className="text-lg font-medium leading-snug">{a.title}</CardTitle>

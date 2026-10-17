@@ -14,11 +14,12 @@ A second, proactive agent for the wholesaler: it reads Kenyan tax, levy and stan
 
 ## Sources and the demo snapshot
 
-The default and the demo use a reviewed snapshot of 10 real notices (KRA, Finance Acts 2025 and 2026 coverage, KEBS draft standard, plastic packaging rules) and one clearly labelled **sample** notice (an invented VAT rise on cooking oil) so the repricing, stock-up and customer-message flow can be shown. Each snapshot entry links to its source; the text is a short summary compiled from that report and checked by a person, not the official wording. Live fetching (`integrations/regwatch.jac`) is limited to https pages on KRA, Kenya Law, Parliament, KEBS, Treasury and NEMA hosts, with no IP addresses, no redirects off the list, 10 s and 2 MB limits; it is best effort and the snapshot is the fallback. The Kenya Law site refused automated requests when this was built.
+The default and the demo use a reviewed snapshot of 10 real notices (KRA, Finance Acts 2025 and 2026 coverage, KEBS draft standard, plastic packaging rules) and one clearly labelled **sample** notice (an invented VAT rise on cooking oil) so the repricing, stock-up and customer-message flow can be shown. Each snapshot entry links to its source; the text is a short summary compiled from that report and checked by a person, not the official wording. **Live reading.** With the live model on, **Check now** also reads the KRA public-notices page on kra.go.ke, takes the newest relevant notices from the last year (at most 5, skipping any already in the snapshot), extracts each notice's body and runs it through the same extraction and fact check; a notice from the tax authority with no stated status is treated as in force once its date has passed. Any network failure falls back to the snapshot. Fetching (`integrations/regwatch.jac`) is limited to https pages on KRA, Kenya Law, Parliament, KEBS, Treasury and NEMA hosts, with no IP addresses, no redirects off the list, 10 s and 2 MB limits; it is best effort and the snapshot is the fallback. The Kenya Law site refused automated requests when this was built.
 
 ## Limits
 
 - Not legal advice, and the page says so. Coverage is a whitelist and a snapshot, not all Kenyan law.
 - Suggested prices only pass the tax change through; the app holds no cost or margin data.
 - Source reports sometimes disagree (for example the previous excise rate on imported sugar); the snapshot leaves such a rate UNKNOWN rather than guessing.
+- Live reading covers KRA public notices only; other sources come from the reviewed snapshot.
 - Evaluation of the live extraction on the snapshot is not yet run.

@@ -50,7 +50,7 @@ Reply `sawa` (or "that's okay") to confirm. The agent places exactly one order a
 
 **5. Approve it as the wholesaler.** Back on the dashboard, **Orders → Needs approval** shows the new order. Click it to review what the customer sent and how the agent read it, then **Approve**, then **Dispatch**. The customer gets a chat message at each step. **Agent activity** shows the whole conversation.
 
-**6. Review the laws that affect you.** Open **Compliance radar** and click **Check now**. The radar reads tax, levy and standards notices (KRA, Kenya Law, KEBS and Finance Act coverage), checks each fact against its source, and shows which of your products are affected and how much of your sales is at stake. Each alert has a **What to do** list:
+**6. Review the laws that affect you.** Open **Compliance radar** and click **Check now**. The radar reads tax, levy and standards notices (a reviewed set from KRA, Kenya Law, KEBS and Finance Act coverage, plus, with a Gemini key, the latest KRA public notices read live from kra.go.ke), checks each fact against its source, and shows which of your products are affected and how much of your sales is at stake. Each alert has a **What to do** list:
 - the sample cooking-oil VAT alert (marked *Sample, not a real notice*) suggests new prices, how much to stock up before the date, and drafted messages to affected customers;
 - click **Apply prices** or **Review and send**: nothing changes until you confirm.
 
@@ -74,14 +74,36 @@ AI_MODE=mock jac run --dev main.jac      # first load compiles the client and is
 
 `AI_MODE=mock` uses a rule-based version of the same decision step (and a canned reading for photos) so the whole flow works offline; the dashboard shows a "Mock AI" badge.
 
-### Live model
+### Run with the live AI (your own Gemini API key)
 
-```bash
-cp .env.example .env     # set GEMINI_API_KEY; AI_MODE=live is the default
-jac run --dev main.jac
-```
+Mock mode is enough to click through everything. With a Gemini key the real agents run:
 
-The default model is `gemini/gemini-3.5-flash-lite` (override with `LLM_MODEL`). Photos of handwritten lists use the same model's vision input.
+| | Mock mode (no key) | Live mode (Gemini key) |
+|---|---|---|
+| Shop chat | rule-based reading of the order | the model reads English, Swahili and Sheng and calls the catalogue, stock and history tools |
+| Photos of handwritten lists | a canned demo reading | the model reads the actual photo |
+| Compliance radar, **Check now** | the reviewed snapshot of notices | also reads the **latest KRA public notices live from kra.go.ke**, then extracts and fact-checks them with the model |
+
+1. **Get a key.** Sign in at [Google AI Studio](https://aistudio.google.com/apikey) and create an API key (the free tier is enough to try it).
+2. **Configure.** In the project folder:
+   ```bash
+   cp .env.example .env
+   ```
+   Then edit `.env`:
+   ```bash
+   AI_MODE=live
+   GEMINI_API_KEY=your-key-here
+   LLM_MODEL=gemini/gemini-3.5-flash-lite   # optional; any Gemini model id works
+   ```
+   `jac` loads `.env` from the project folder when it starts. Never commit `.env` (it is in `.gitignore`).
+3. **Run.**
+   ```bash
+   jac install            # once
+   jac run --dev main.jac
+   ```
+4. **Check it is live.** The "Mock AI" badge on the Overview is gone. Follow the [walkthrough](#step-by-step-walkthrough): replies now come from the model, and **Compliance radar → Check now** shows "Read N live notices from kra.go.ke", with alerts marked *Read live from kra.go.ke*.
+
+If the model is unreachable or out of quota, the chat falls back to the rule-based path and the radar falls back to the snapshot, so nothing breaks; the agent trace on the order review shows which path was used. On a host such as Jac Hammer, set `AI_MODE` and `GEMINI_API_KEY` as environment variables instead of a `.env` file.
 
 ## How we used Jac and Jaseci
 

@@ -9,7 +9,8 @@ import from domain.errors { DomainError }
 import from domain.catalogue { list_products }
 import from domain.clock { now_iso }
 import from domain.compliance { list_notices, find_notice, upsert_alert, list_alerts }
-import from integrations.regwatch { SourceDoc, load_snapshot, pasted_doc, fetch_page, allowed_url }
+import from integrations.regwatch { SourceDoc, load_snapshot, pasted_doc, fetch_kra_notices }
+import from integrations.regsnapshot { SNAPSHOT }
 import from ai.regulation { read_notice, pick_evidence, Checked }
 import from ai.actions { plan_actions }
 
@@ -18,6 +19,7 @@ glob BASE_CATEGORIES: list[str] = ["Packaging", "Water"];
 obj RefreshResult {
     has new_notices: int = 0,
         new_alerts: int = 0,
+        live_read: int = 0,
         skipped: list[str] = [],
         mode: str = "snapshot";
 }
@@ -37,6 +39,11 @@ def ingest(biz: Business, doc: SourceDoc, today: str, live: bool) -> tuple[RegNo
     checked = read_notice(doc, product_categories(biz), today, live);
     if not checked.ok { return (None, f"{doc.title}: {checked.reason}"); }
     ex = checked.extract;
+    # A public notice from the tax authority is an announcement, not a bill: if the model could not
+    # tell, it is in force once its date has passed (or no date is given), otherwise passed and pending.
+    if doc.origin == "LIVE" and ex.status == "UNKNOWN" {
+        ex.status = "ENACTED" if ex.effective_on != "UNKNOWN" and ex.effective_on > today else "IN_FORCE";
+    }
     notice = RegNotice(
         notice_id=nid, title=doc.title, source_name=doc.source_name, url=doc.url,
         published_on=doc.published_on or "UNKNOWN", status=ex.status, effective_on=ex.effective_on, kind=ex.kind,
@@ -66,10 +73,22 @@ walker ComplianceScout {
     }
 }
 
-"""Read the sources (snapshot, or live pages best effort), store new notices, then run the scout."""
+"""Read the sources, store new notices, then run the scout. With `fetch_live` the radar also reads the
+latest KRA public notices from kra.go.ke; if that fails it carries on with the reviewed snapshot."""
 def refresh_radar(biz: Business, today: str, live: bool = False, fetch_live: bool = False) -> RefreshResult {
     result = RefreshResult(mode="live" if fetch_live else "snapshot");
-    for doc in load_snapshot() {
+    docs = load_snapshot();
+    if fetch_live {
+        try {
+            fresh = fetch_kra_notices(today, [n["url"] for n in SNAPSHOT]);
+            result.live_read = len(fresh);
+            docs = fresh + docs;
+        } except Exception as e {
+            result.mode = "snapshot";
+            result.skipped.append(f"live sources unreachable ({type(e).__name__}); used the reviewed snapshot");
+        }
+    }
+    for doc in docs {
         (notice, reason) = ingest(biz, doc, today, live);
         if notice is not None { result.new_notices += 1; }
         elif reason { result.skipped.append(reason); }

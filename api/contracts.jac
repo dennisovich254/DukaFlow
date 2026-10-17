@@ -368,6 +368,8 @@ obj RadarRefreshResult {
         new_notices: int = 0,
         new_alerts: int = 0,
         skipped: int = 0,
+        live_read: int = 0,
+        mode: str = "snapshot",
         error: ApiError | None = None;
 }
 

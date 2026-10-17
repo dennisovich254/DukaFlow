@@ -64,11 +64,16 @@ def:protect radar_overview() -> RadarView {
     return RadarView(alerts=views, notice_count=len(list_notices(biz)), mode=current_mode(), today=now_iso()[:10]);
 }
 
-"""Read the sources (reviewed snapshot) and update the alerts; never duplicates."""
+"""Read the sources and update the alerts; never duplicates. With the live model on, it also reads the
+latest KRA public notices from kra.go.ke."""
 def:protect radar_check_now() -> RadarRefreshResult {
     try {
-        r = refresh_radar(current_business(), now_iso()[:10], live_model());
-        return RadarRefreshResult(ok=True, new_notices=r.new_notices, new_alerts=r.new_alerts, skipped=len(r.skipped));
+        live = live_model();
+        r = refresh_radar(current_business(), now_iso()[:10], live, fetch_live=live);
+        return RadarRefreshResult(
+            ok=True, new_notices=r.new_notices, new_alerts=r.new_alerts, skipped=len(r.skipped),
+            live_read=r.live_read, mode=r.mode
+        );
     } except DomainError as e {
         return RadarRefreshResult(ok=False, error=to_api_error(e));
     }
