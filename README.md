@@ -4,7 +4,19 @@ An AI order desk for Kenyan wholesalers. Retailers order by chat, in English, Sw
 
 Built in **Jac 0.37** for JacHacks Kenya 2026 (backend, agent, tests and the React front end are all Jac).
 
-> Demo video, hosted app and pitch deck: linked from the Devpost submission.
+**▶ Demo video:** [youtube.com/watch?v=JZkEvwCbrXI](https://www.youtube.com/watch?v=JZkEvwCbrXI) · **Live preview:** [DukaFlow on Jac Hammer](https://preview-jac-sbx-2bf6dc63c2d54b1b944434e0e53310c3.jachammer.app) · **Pitch deck:** [docs/pitch-deck.pdf](docs/pitch-deck.pdf)
+
+[![DukaFlow demo video](https://img.youtube.com/vi/JZkEvwCbrXI/maxresdefault.jpg)](https://www.youtube.com/watch?v=JZkEvwCbrXI)
+
+## Screenshots
+
+| Shop chat (customer, no sign-in) | Wholesaler Overview |
+|---|---|
+| ![The agent answering a shopkeeper in Swahili with real catalogue prices](docs/screenshots/shop-chat.png) | ![Overview with sales this week, orders by status and stock alerts](docs/screenshots/overview.png) |
+
+| Compliance radar | From chat to approval |
+|---|---|
+| ![A compliance alert showing the affected products, sales at stake and what to do](docs/screenshots/compliance-radar.png) | ![Landing page: a Swahili order, the quote, and the order waiting for approval](docs/screenshots/landing-flow.png) |
 
 ## What it does
 
@@ -19,7 +31,32 @@ Built in **Jac 0.37** for JacHacks Kenya 2026 (backend, agent, tests and the Rea
 
 The agent never creates an order on its own: the customer confirms an open quotation, and the wholesaler approves the order.
 
-## Try it yourself (no API key needed)
+## Step-by-step walkthrough
+
+Use the [live preview](https://preview-jac-sbx-2bf6dc63c2d54b1b944434e0e53310c3.jachammer.app) or a local run (next section). The first load can take a few seconds.
+
+**1. Register as a wholesaler.** Open the app, click **Open your dashboard**, then **Create an account** with any email and a password. You land on your own, empty Overview.
+
+**2. Load the demo data.** On the Overview click **Load demo data**. It adds a catalogue of 39 products with stock, three shops as customers and 17 past orders, and the Overview fills with sales, top products and low-stock warnings. Have a look at **Orders**, **Customers** and **Products & stock**.
+
+**3. Open a shop's chat.** Go to **Customers**. For *Mama Wanjiku Shop* click **Chat link** (copies a personal, revocable link) or **Open as customer**. The chat opens with no sign-in, as it would on the shopkeeper's phone.
+
+**4. Order in the chat.** Try any of these:
+- `Habari, mna bidhaa gani?` (what do you sell?): the agent answers from the real catalogue.
+- `Niletee Rina 1L carton 10 na Jogoo 2kg bale 5`: a priced quote. If stock is short, it offers an alternative you must confirm.
+- `nipe kama kawaida` ("the usual"): a quote of this shop's usual order.
+
+Reply `sawa` (or "that's okay") to confirm. The agent places exactly one order and tells you it is waiting for the wholesaler.
+
+**5. Approve it as the wholesaler.** Back on the dashboard, **Orders → Needs approval** shows the new order. Click it to review what the customer sent and how the agent read it, then **Approve**, then **Dispatch**. The customer gets a chat message at each step. **Agent activity** shows the whole conversation.
+
+**6. Review the laws that affect you.** Open **Compliance radar** and click **Check now**. The radar reads tax, levy and standards notices (KRA, Kenya Law, KEBS and Finance Act coverage), checks each fact against its source, and shows which of your products are affected and how much of your sales is at stake. Each alert has a **What to do** list:
+- the sample cooking-oil VAT alert (marked *Sample, not a real notice*) suggests new prices, how much to stock up before the date, and drafted messages to affected customers;
+- click **Apply prices** or **Review and send**: nothing changes until you confirm.
+
+Use **Analyse a notice** to paste the text of any bill or notice and get the same analysis. Alerts are not legal advice.
+
+## Run it locally (no API key needed)
 
 Requires the pinned toolchain: `jac` 0.37.25.
 
@@ -76,17 +113,21 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/security.md](docs/s
 
 ## Results
 
-- **Tests:** `jac test -d tests/` runs 117 tests (domain, API, security, agent with a scripted model); CI runs `jac check .` and the tests on every pull request.
+- **Tests:** `jac test -d tests/` runs 131 tests (domain, API, security, the order agent and the compliance radar, with a scripted model); CI runs `jac check .` and the tests on every pull request.
 - **Real-model evaluation (text):** 11 of 11 hand-written cases passed, with no guessed quantities and no price changes. Small and author-written: see [docs/evaluation.md](docs/evaluation.md) for the limits.
-- **Jac share:** **97.4%** of source lines are Jac (8,639 Jac lines; the only other source is 231 lines of CSS for the theme), or **93.5%** if the 368 lines of YAML, TOML, JSON and markdown config are counted as non-Jac. Measured by [scripts/jac_share.jac](scripts/jac_share.jac) over tracked files; GitHub's language bar is the second reference.
+- **Jac share:** **97.8%** of source lines are Jac (10,385 Jac lines; the only other source is 231 lines of CSS for the theme), or **94.3%** if the 400 lines of YAML, TOML, JSON and markdown config are counted as non-Jac. Measured by [scripts/jac_share.jac](scripts/jac_share.jac) over tracked files; GitHub's language bar is the second reference.
 
 ## Identity and access
 
 Wholesalers sign in with Jac's built-in auth and each endpoint finds only the caller's own business. Retailers never create accounts: the wholesaler creates a personal, revocable invite link (30-day expiry) and the token alone decides which business and customer a chat belongs to. To let anonymous chat requests reach the wholesaler's graph, the business lives on `root.shared` with type-level `WRITE` access, so **access control lives in the endpoints, not the framework**. This is a deliberate trade-off, written up in [docs/security.md](docs/security.md); production would use per-customer sharing grants.
 
-## Why not WhatsApp?
+## Why not WhatsApp yet?
 
-The natural channel for Kenyan retailers is WhatsApp. Its Business API needs a verified business account, which does not fit a one-day build, so the retailer side is a web chat behind an invite link with the same shape (text and photos). The agent takes a channel-independent inbound message, so a WhatsApp adapter is the next step.
+The natural channel for Kenyan retailers is WhatsApp. Its Business API needs a verified business account, which does not fit a one-day build, so the retailer side is a web chat behind an invite link with the same shape (text and photos). The agent takes a channel-independent inbound message, so a real WhatsApp integration is the next step, followed by M-Pesa payment links on approved orders.
+
+## Hosting note
+
+The live preview runs on Jac Hammer. Its proxy mishandles gzip, so `jac.toml` turns response compression off (`[serve.compression] enabled = false`).
 
 ## Running the checks
 
