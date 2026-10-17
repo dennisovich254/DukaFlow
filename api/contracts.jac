@@ -303,3 +303,98 @@ obj AnalyticsView {
         today: str,
         ai_mode: str = "live";
 }
+
+"""A draft message to one customer: shown for review and edited before it is sent."""
+obj DraftMessageView {
+    has customer_id: str,
+        customer_name: str,
+        text: str;
+}
+
+obj AffectedProductView {
+    has sku: str,
+        name: str,
+        price_kes: int,
+        unit: str;
+}
+
+"""One recommended next step. Nothing runs until the wholesaler clicks."""
+obj ActionView {
+    has action_id: str,
+        kind: str,
+        title: str,
+        detail: str,
+        impact_kes: int,
+        due_on: str,
+        status: str,
+        messages: list[DraftMessageView] = [];
+}
+
+"""A notice plus what it means for this business, with its sources and actions."""
+obj AlertView {
+    has alert_id: str,
+        title: str,
+        source_name: str,
+        url: str,
+        published_on: str,
+        notice_status: str,
+        effective_on: str,
+        kind: str,
+        evidence: str,
+        rate_before: str,
+        rate_after: str,
+        applies_to: str,
+        origin: str,
+        caveat: str,
+        severity: str,
+        effect_text: str,
+        confidence: str,
+        alert_status: str,
+        sales_30d_kes: int,
+        share_of_sales_pct: int,
+        products: list[AffectedProductView],
+        actions: list[ActionView];
+}
+
+obj RadarView {
+    has alerts: list[AlertView],
+        notice_count: int,
+        mode: str,
+        today: str;
+}
+
+obj RadarRefreshResult {
+    has ok: bool,
+        new_notices: int = 0,
+        new_alerts: int = 0,
+        skipped: int = 0,
+        error: ApiError | None = None;
+}
+
+obj AnalyseInput {
+    has text: str,
+        title: str = "";
+}
+
+obj AnalyseResult {
+    has ok: bool,
+        alert_id: str = "",
+        error: ApiError | None = None;
+}
+
+"""kind: apply (prices), send (messages), pause, done or skip."""
+obj RadarActionInput {
+    has action_id: str,
+        kind: str,
+        messages: list[DraftMessageView] = [];
+}
+
+obj RadarActionResult {
+    has ok: bool,
+        message: str = "",
+        error: ApiError | None = None;
+}
+
+obj AlertLookup {
+    has alert_id: str;
+}

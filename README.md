@@ -15,6 +15,7 @@ Built in **Jac 0.37** for JacHacks Kenya 2026 (backend, agent, tests and the Rea
 | Says "sawa" to confirm; asks "oda yangu iko wapi?" any time for status | **Customers**: personal chat links (revocable) |
 | Is told when the order is approved or dispatched | **Products & stock**: catalogue, stock adjustments with an audit trail |
 | | **Agent activity**: the live chats between customers and the agent |
+| | **Compliance radar**: tax, levy and standards changes matched to what you sell, with costed next steps (reprice, stock up, tell customers) |
 
 The agent never creates an order on its own: the customer confirms an open quotation, and the wholesaler approves the order.
 
@@ -52,6 +53,7 @@ The default model is `gemini/gemini-3.5-flash-lite` (override with `LLM_MODEL`).
 | Nodes, edges and the persistent graph | [domain/models.jac](domain/models.jac): business, catalogue, stock, customers, orders, quotations, conversations, audit |
 | Walkers (object-spatial programming) | `walker CustomerAgent` in [ai/agent.jac](ai/agent.jac): spawned on a customer's `Conversation`, walks to the `Business`, gathers context, acts |
 | `by llm` with `tools=[...]` and `sem` | [ai/brain.jac](ai/brain.jac): a tool-using decision step (`search_catalogue`, `check_stock`, `suggest_alternatives`, `recent_orders`) with typed output |
+| Walker over the business graph | `walker ComplianceScout` in [ai/radar.jac](ai/radar.jac): visits each notice, matches products, computes the money at stake, plans actions ([docs/compliance.md](docs/compliance.md)) |
 | Multimodal `Image` input | `Brain.read_list` in [ai/brain.jac](ai/brain.jac): handwritten lists |
 | `MockLLM` / `MockToolCall` | [tests/agent_tests.jac](tests/agent_tests.jac) and mock mode: deterministic agent tests that never call a model |
 | Full-stack Jac client (React) | every page under [pages/](pages/) and [components/](components/) |
