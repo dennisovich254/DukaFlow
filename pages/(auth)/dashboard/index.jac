@@ -40,10 +40,21 @@ def change_text(now: int, before: int) -> str {
 def:pub OverviewPage() -> JsxPage {
     has data: AnalyticsView | None = None;
     has loading: bool = True;
+    has failed: bool = False;
 
     async def load_all {
-        data = await dashboard_analytics();
+        failed = False;
+        try {
+            data = await dashboard_analytics();
+        } except Exception {
+            failed = True;
+        }
         loading = False;
+    }
+
+    async def retry(e: MouseEvent) {
+        loading = True;
+        await load_all();
     }
 
     async def seed(e: MouseEvent) {
@@ -73,7 +84,17 @@ def:pub OverviewPage() -> JsxPage {
             </Link>
         </PageHeader>
 
-        {if a is None {
+        {if a is None and failed {
+            <Card>
+                <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6 pb-6">
+                    <div>
+                        <p className="font-medium">Your numbers did not load</p>
+                        <p className="text-sm text-muted-foreground">The server could not be reached or sent an unreadable reply. Your data is safe.</p>
+                    </div>
+                    <Button onClick={retry} disabled={loading}>{"Retrying…" if loading else "Try again"}</Button>
+                </CardContent>
+            </Card>
+        } elif a is None {
             <p className="text-sm text-muted-foreground">Loading your numbers…</p>
         } else {
             <div className="flex flex-col gap-6">
