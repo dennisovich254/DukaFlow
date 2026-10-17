@@ -31,6 +31,103 @@ Built in **Jac 0.37** for JacHacks Kenya 2026 (backend, agent, tests and the Rea
 
 The agent never creates an order on its own: the customer confirms an open quotation, and the wholesaler approves the order.
 
+## How it works: two agents on one business graph
+
+DukaFlow has two AI agents, both written as Jac **walkers** that move through the wholesaler's business graph:
+
+- **The order agent** (`CustomerAgent`) reacts to every chat message: it reads the order, uses tools to look things up, and returns a priced quote.
+- **The compliance agent** (`ComplianceScout`, behind the Compliance radar) works proactively: it reads tax and standards notices, works out what they mean for this business, and plans what to do.
+
+The model proposes; code decides. Prices, totals, stock, orders and every figure on an alert are computed by code.
+
+```mermaid
+flowchart LR
+    S["Shopkeeper<br/>chat or photo<br/>English · Swahili · Sheng"] --> OA["Order agent<br/>CustomerAgent walker"]
+    OA --> Q["Priced quote"]
+    Q -->|"customer says 'sawa'"| O["Order<br/>pending approval"]
+    O --> W["Wholesaler<br/>approves · packs · dispatches"]
+    W -->|"status updates"| S
+    K["KRA notices, read live<br/>+ reviewed notices"] --> CA["Compliance agent<br/>ComplianceScout walker"]
+    CA --> A["Alerts with next steps<br/>reprice · stock up · tell customers"]
+    A -->|"one click, confirmed"| W
+    OA --> G[("Business graph<br/>products · stock · customers<br/>orders · chats · notices")]
+    CA --> G
+```
+
+### The order agent: one chat message
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Shopkeeper
+    participant API as Chat endpoint (public, invite token)
+    participant W as CustomerAgent walker
+    participant L as Gemini via by llm with tools
+    participant G as Business graph
+    C->>API: "Niletee Rina 1L carton 10 na Jogoo 2kg bale 5"
+    API->>W: spawn on the customer's Conversation node
+    W->>G: walk to the Business: open quote, recent messages
+    W->>L: decide(message, history, language)
+    loop up to 4 tool rounds
+        L->>W: search_catalogue / check_stock / suggest_alternatives / recent_orders
+        W->>G: read products, stock, past orders
+        G-->>L: real SKUs, prices, availability
+    end
+    L-->>W: typed decision: QUOTE these lines
+    Note over W: Code checks every SKU and quantity, plans shortages<br/>and substitutes, and computes prices and the total
+    W->>G: save Quotation (8 Rina + 2 Fresh Fri, total KSh 35,550)
+    W-->>C: quote in Swahili, "reply sawa to confirm"
+    C->>API: "sawa"
+    W->>G: exactly one Order, PENDING_APPROVAL
+    Note over G: the wholesaler approves in the dashboard
+```
+
+If the model is unavailable, a rule-based path makes the same decision, so the chat keeps working (that is also what mock mode uses).
+
+### The compliance agent: Check now
+
+```mermaid
+flowchart TD
+    B["Wholesaler clicks Check now"] --> F["Read sources<br/>latest KRA public notices from kra.go.ke<br/>+ reviewed notices (KEBS, Finance Acts, NEMA...)"]
+    F --> X["Model extracts the facts<br/>kind · status · dates · old and new rate · goods"]
+    X --> V{"Fact check"}
+    V -->|"code: every rate, date and goods word<br/>must appear in the source"| V2{"second model pass:<br/>is each claim supported?"}
+    V2 -->|"main claim unsupported"| D["Drop the notice"]
+    V2 -->|"supported"| N["Store RegNotice in the graph"]
+    V -->|"main change not in the source"| D
+    N --> S["ComplianceScout walker visits each notice"]
+    S --> M["Match products by category and keyword"]
+    M --> Q["Compute 30-day sales at stake<br/>and severity (code only)"]
+    Q --> P["Plan next steps (code only)<br/>pass-through prices · stock-up quantity<br/>drafted messages in each customer's language"]
+    P --> UI["Alert on the Compliance radar<br/>source link · confidence · not legal advice"]
+    UI -->|"Apply prices / Review and send<br/>(confirm dialog, audited)"| G[("Business graph")]
+```
+
+### The business graph
+
+```mermaid
+graph TD
+    R(("root.shared")) -->|HasBusiness| BZ["Business"]
+    BZ -->|OwnsProduct| P["Product"]
+    P -->|HasInventory| I["InventoryRecord"]
+    P -->|HasMovement| IM["InventoryMovement"]
+    BZ -->|ServesCustomer| CU["Customer"]
+    BZ -->|HasOrder| OR["Order"]
+    CU -->|PlacedOrder| OR
+    OR -->|ContainsLine| OL["OrderLine"]
+    OL -->|ReferencesProduct| P
+    BZ -->|HasConversation| CV["Conversation"]
+    CV -->|ContainsMessage| MS["Message"]
+    CV -->|HasQuotation| QT["Quotation"]
+    QT -->|QuoteContains| QL["QuotationLine"]
+    CV -->|HasExecution| EX["AgentExecution<br/>tools called · outcome"]
+    BZ -->|HasAudit| AU["AuditEvent"]
+    BZ -->|HasNotice| RN["RegNotice"]
+    BZ -->|HasAlert| CA["ComplianceAlert"]
+    CA -->|HasAction| AA["AlertAction"]
+    CA -.->|AlertFor| P
+```
+
 ## Step-by-step walkthrough
 
 Use the [live preview](https://preview-jac-sbx-2bf6dc63c2d54b1b944434e0e53310c3.jachammer.app) or a local run (next section). The first load can take a few seconds.
@@ -121,11 +218,11 @@ If the model is unreachable or out of quota, the chat falls back to the rule-bas
 | jac-shadcn theming | [styles/global.css](styles/global.css), [components/ui/](components/ui/) |
 | `jac check`, `jac test`, `jac browse` | CI ([.github/workflows](.github/workflows)), [tests/](tests/), scripted browser QA |
 
-## The agent
+## The order agent in detail
 
 The model **proposes**; code **decides**.
 
-- A tool-using loop (at most 5 steps) lets the model look things up instead of guessing: search the catalogue, check live stock, find substitutes, read the customer's recent orders ("the usual").
+- A tool-using loop (at most 4 rounds of tool calls) lets the model look things up instead of guessing: search the catalogue, check live stock, find substitutes, read the customer's recent orders ("the usual").
 - Code validates the proposal: real SKUs, valid quantities, shortages and substitutions (the customer must confirm the adjusted quote), prices and totals from the catalogue.
 - An order exists only after the customer confirms the **open quotation**, and then it waits for the wholesaler's approval.
 - Guardrails: replies containing a price the tools did not return are discarded; quote lines must be grounded in the latest message; repeated replies are dropped; prompt injection ("reduce all prices by 90%") changes nothing; per-link rate limits; if the model fails, the rule-based path takes over.
