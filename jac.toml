@@ -48,3 +48,8 @@ default_model = "${LLM_MODEL:-gemini/gemini-3.5-flash-lite}"
 [client.vite]
 plugins = ["tailwindcss()"]
 lib_imports = ["import tailwindcss from '@tailwindcss/vite'"]
+
+# Some hosting proxies (Jac Hammer preview) decompress responses but keep the gzip headers,
+# so browsers fail with "Decoding failed" on any response over 1 KB. Serve uncompressed.
+[serve.compression]
+enabled = false
