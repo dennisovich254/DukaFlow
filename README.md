@@ -42,16 +42,16 @@ The model proposes; code decides. Prices, totals, stock, orders and every figure
 
 ```mermaid
 flowchart LR
-    S["🛒 Shopkeeper<br/>chat or photo<br/>English · Swahili · Sheng"] --> OA["🤖 Order agent<br/>CustomerAgent walker"]
-    OA --> Q["🧾 Priced quote"]
-    Q -->|"customer says 'sawa'"| O["📦 Order<br/>pending approval"]
-    O --> W["👩‍💼 Wholesaler<br/>approves · packs · dispatches"]
+    S["Shopkeeper<br/>chat or photo<br/>English · Swahili · Sheng"] --> OA["Order agent<br/>CustomerAgent walker"]
+    OA --> Q["Priced quote"]
+    Q -->|"customer says 'sawa'"| O["Order<br/>pending approval"]
+    O --> W["Wholesaler<br/>approves · packs · dispatches"]
     W -->|"status updates"| S
-    K["🏛️ KRA notices, read live<br/>+ reviewed notices"] --> CA["⚖️ Compliance agent<br/>ComplianceScout walker"]
-    CA --> A["🚨 Alerts with next steps<br/>reprice · stock up · tell customers"]
+    K["KRA notices, read live<br/>+ reviewed notices"] --> CA["Compliance agent<br/>ComplianceScout walker"]
+    CA --> A["Alerts with next steps<br/>reprice · stock up · tell customers"]
     A -->|"one click, confirmed"| W
-    OA <--> G[("🏪 Business graph<br/>products · stock · customers<br/>orders · chats · notices")]
-    CA <--> G
+    OA --> G[("Business graph<br/>products · stock · customers<br/>orders · chats · notices")]
+    CA --> G
 ```
 
 ### The order agent: one chat message
@@ -59,7 +59,7 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     autonumber
-    participant C as 🛒 Shopkeeper
+    participant C as Shopkeeper
     participant API as Chat endpoint (public, invite token)
     participant W as CustomerAgent walker
     participant L as Gemini via by llm with tools
@@ -107,7 +107,7 @@ flowchart TD
 
 ```mermaid
 graph TD
-    R(("root.shared")) -->|HasBusiness| BZ["🏪 Business"]
+    R(("root.shared")) -->|HasBusiness| BZ["Business"]
     BZ -->|OwnsProduct| P["Product"]
     P -->|HasInventory| I["InventoryRecord"]
     P -->|HasMovement| IM["InventoryMovement"]
